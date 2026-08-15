@@ -35,5 +35,12 @@ docker-data/
 # Testes e análise estática (artefatos locais)
 .phpunit.cache/
 .phpunit.result.cache
-tests/phpstan-constants.php
+tests/
 coverage/
+
+# Tooling de validação local (não faz parte do plugin)
+composer.json
+composer.lock
+phpcs.xml
+phpstan.neon
+phpunit.xml
