@@ -57,6 +57,86 @@ function blwp_render_settings_page() {
         echo '<div class="notice notice-success"><p>' . esc_html__('Whitelist atualizada.', 'dolutech-blacklist-protect') . '</p></div>';
     }
 
+    // Salvar configurações de bloqueio CIDR e User-Agent
+    if (isset($_POST['blwp_save_cidr_ua_settings']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
+        $cidr_raw = isset($_POST['blwp_cidr_blocked']) ? sanitize_textarea_field(wp_unslash($_POST['blwp_cidr_blocked'])) : '';
+        $ua_raw = isset($_POST['blwp_ua_blocked']) ? sanitize_textarea_field(wp_unslash($_POST['blwp_ua_blocked'])) : '';
+        $ua_enabled = isset($_POST['blwp_ua_block_enabled']) ? 1 : 0;
+
+        // Valida CIDRs, ignora inválidos
+        $valid_cidrs = [];
+        $invalid_cidrs = [];
+        foreach (array_filter(array_map('trim', explode("\n", $cidr_raw))) as $cidr) {
+            if (blwp_is_valid_cidr($cidr)) {
+                $valid_cidrs[] = $cidr;
+            } else {
+                $invalid_cidrs[] = $cidr;
+            }
+        }
+
+        $uas = array_values(array_filter(array_map('trim', explode("\n", $ua_raw))));
+
+        update_option('blwp_cidr_blocked', $valid_cidrs);
+        update_option('blwp_ua_blocked', $uas);
+        update_option('blwp_ua_block_enabled', $ua_enabled);
+
+        if (!empty($invalid_cidrs)) {
+            echo '<div class="notice notice-warning"><p>' .
+                 sprintf(
+                     /* translators: %s: comma-separated list of invalid CIDRs */
+                     esc_html__('CIDRs inválidos ignorados: %s', 'dolutech-blacklist-protect'),
+                     implode(', ', array_map('esc_html', $invalid_cidrs))
+                 ) .
+                 '</p></div>';
+        }
+
+        echo '<div class="notice notice-success"><p>' . esc_html__('Configurações de CIDR e User-Agent salvas.', 'dolutech-blacklist-protect') . '</p></div>';
+    }
+
+    // Salvar configurações de notificações
+    if (isset($_POST['blwp_save_notification_settings']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
+        $telegram_enabled = isset($_POST['blwp_telegram_enabled']) ? 1 : 0;
+        update_option('blwp_telegram_enabled', $telegram_enabled);
+
+        if ($telegram_enabled) {
+            $bot_token = isset($_POST['blwp_telegram_bot_token']) ? sanitize_text_field(wp_unslash($_POST['blwp_telegram_bot_token'])) : '';
+            $chat_id = isset($_POST['blwp_telegram_chat_id']) ? sanitize_text_field(wp_unslash($_POST['blwp_telegram_chat_id'])) : '';
+            // Só atualiza se o campo não estiver em branco (mantém a atual)
+            if (!empty($bot_token)) {
+                update_option('blwp_telegram_bot_token', $bot_token);
+            }
+            if (!empty($chat_id)) {
+                update_option('blwp_telegram_chat_id', $chat_id);
+            }
+        }
+
+        $webhook_enabled = isset($_POST['blwp_webhook_enabled']) ? 1 : 0;
+        update_option('blwp_webhook_enabled', $webhook_enabled);
+
+        if ($webhook_enabled) {
+            $webhook_url = isset($_POST['blwp_webhook_url']) ? esc_url_raw(wp_unslash($_POST['blwp_webhook_url'])) : '';
+            if (!empty($webhook_url)) {
+                update_option('blwp_webhook_url', $webhook_url);
+            }
+        }
+
+        // Eventos que disparam notificação
+        $event_labels = blwp_get_event_labels();
+        $notify_events = isset($_POST['blwp_notify_events']) ? (array) $_POST['blwp_notify_events'] : [];
+        $notify_events = array_values(array_filter(array_map('sanitize_key', $notify_events), function ($key) use ($event_labels) {
+            return isset($event_labels[$key]);
+        }));
+        update_option('blwp_notify_events', $notify_events);
+
+        echo '<div class="notice notice-success"><p>' . esc_html__('Configurações de notificações salvas.', 'dolutech-blacklist-protect') . '</p></div>';
+    }
+
+    // Enviar notificação de teste
+    if (isset($_POST['blwp_test_notification']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
+        blwp_test_notifications();
+        echo '<div class="notice notice-success"><p>' . esc_html__('Notificação de teste enviada.', 'dolutech-blacklist-protect') . '</p></div>';
+    }
+
     if (isset($_POST['blwp_add_manual_block']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
         $ip = isset($_POST['manual_ip']) ? sanitize_text_field(wp_unslash($_POST['manual_ip'])) : '';
         if (filter_var($ip, FILTER_VALIDATE_IP)) {
@@ -64,6 +144,7 @@ function blwp_render_settings_page() {
             if (!in_array($ip, $list, true)) {
                 $list[] = $ip;
                 update_option('blwp_manual_blocked_ips', $list);
+                blwp_log_event($ip, 'admin_block', 'Bloqueio manual pelo admin', 'admin');
             }
         }
     }
@@ -73,6 +154,7 @@ function blwp_render_settings_page() {
         $list = blwp_get_manual_blocked_ips();
         $list = array_diff($list, [$remove_ip]);
         update_option('blwp_manual_blocked_ips', $list);
+        blwp_log_event($remove_ip, 'admin_unblock', 'Desbloqueio manual pelo admin', 'admin');
     }
 
     if (isset($_POST['blwp_manual_update']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
@@ -358,6 +440,15 @@ function blwp_render_settings_page() {
     $auto_report = get_option('blwp_auto_report', 0);
     $blacklist_enabled = get_option('blwp_blacklist_enabled', 1);
     $whitelist = get_option('blwp_whitelist', []);
+    $cidr_blocked = get_option('blwp_cidr_blocked', []);
+    $ua_blocked = get_option('blwp_ua_blocked', []);
+    $ua_block_enabled = get_option('blwp_ua_block_enabled', 0);
+    $telegram_enabled = get_option('blwp_telegram_enabled', 0);
+    $telegram_bot_token = get_option('blwp_telegram_bot_token', '');
+    $telegram_chat_id = get_option('blwp_telegram_chat_id', '');
+    $webhook_enabled = get_option('blwp_webhook_enabled', 0);
+    $webhook_url = get_option('blwp_webhook_url', '');
+    $notify_events = get_option('blwp_notify_events', []);
     $max_attempts = get_option('blwp_max_login_attempts', 3);
     $temp_block_enabled = get_option('blwp_temp_block_enabled', 0);
     $temp_block_duration = get_option('blwp_temp_block_duration', 60);
@@ -1053,6 +1144,71 @@ function blwp_render_settings_page() {
 
         <hr>
 
+        <h2><?php esc_html_e('Bloqueio por Faixa CIDR e User-Agent', 'dolutech-blacklist-protect'); ?></h2>
+        <p><?php esc_html_e('Bloqueie faixas inteiras de IPs (CIDR) e user-agents suspeitos. Suporta IPv4 e IPv6.', 'dolutech-blacklist-protect'); ?></p>
+        <form method="post">
+            <?php wp_nonce_field('blwp_nonce_action', 'blwp_nonce_field'); ?>
+            <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <label for="blwp_cidr_blocked">
+                        <?php esc_html_e('Faixas CIDR bloqueadas', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </th>
+                <td>
+                    <textarea id="blwp_cidr_blocked" name="blwp_cidr_blocked"
+                              rows="6" cols="50" style="width: 100%; max-width: 400px;"><?php echo esc_textarea(implode("\n", $cidr_blocked)); ?></textarea>
+                    <p class="description">
+                        <?php esc_html_e('Um CIDR por linha. Exemplos: 203.0.113.0/24 (IPv4), 2001:db8::/32 (IPv6).', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Bloqueio por User-Agent', 'dolutech-blacklist-protect'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="blwp_ua_block_enabled" id="blwp_ua_block_enabled" <?php checked($ua_block_enabled, 1); ?> />
+                        <?php esc_html_e('Ativar bloqueio por user-agent', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tr id="ua_blocked_row" style="<?php echo $ua_block_enabled ? '' : 'display:none;'; ?>">
+                <th scope="row">
+                    <label for="blwp_ua_blocked">
+                        <?php esc_html_e('User-Agents bloqueados', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </th>
+                <td>
+                    <textarea id="blwp_ua_blocked" name="blwp_ua_blocked"
+                              rows="6" cols="50" style="width: 100%; max-width: 400px;"><?php echo esc_textarea(implode("\n", $ua_blocked)); ?></textarea>
+                    <p class="description">
+                        <?php esc_html_e('Um padrão por linha (substring, sem diferenciar maiúsculas). Ex.: sqlmap, nikto, python-requests.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                    <p class="description" style="color: #b36b00;">
+                        <?php esc_html_e('⚠️ User-agent pode ser falsificado — use como camada extra, não como única proteção.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            </table>
+            <p>
+                <input type="submit" name="blwp_save_cidr_ua_settings" value="<?php esc_attr_e('Salvar Configurações CIDR/UA', 'dolutech-blacklist-protect'); ?>" class="button button-primary" />
+            </p>
+        </form>
+        <script>
+            document.getElementById('blwp_ua_block_enabled').addEventListener('change', function() {
+                var row = document.getElementById('ua_blocked_row');
+                if (this.checked) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        </script>
+
+        <hr>
+
         <h2><?php esc_html_e('Blacklists de Terceiros', 'dolutech-blacklist-protect'); ?></h2>
         <p><?php esc_html_e('Adicione URLs de blacklists externas (arquivos .txt) que serão atualizadas automaticamente junto com a blacklist principal.', 'dolutech-blacklist-protect'); ?></p>
         
@@ -1323,6 +1479,123 @@ function blwp_render_settings_page() {
                     });
                 }
             })();
+        </script>
+
+        <hr>
+
+        <h2><?php esc_html_e('Notificações (Telegram e Webhook)', 'dolutech-blacklist-protect'); ?></h2>
+        <p><?php esc_html_e('Receba alertas instantâneos quando o plugin bloquear acessos. Os eventos selecionados disparam notificações nos canais configurados.', 'dolutech-blacklist-protect'); ?></p>
+
+        <form method="post">
+            <?php wp_nonce_field('blwp_nonce_action', 'blwp_nonce_field'); ?>
+            <table class="form-table">
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Telegram', 'dolutech-blacklist-protect'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="blwp_telegram_enabled" id="blwp_telegram_enabled" <?php checked($telegram_enabled, 1); ?> />
+                        <?php esc_html_e('Ativar notificações via Telegram', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tbody id="telegram_settings" style="<?php echo $telegram_enabled ? '' : 'display:none;'; ?>">
+            <tr>
+                <th scope="row">
+                    <label for="blwp_telegram_bot_token">
+                        <?php esc_html_e('Bot Token', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="password" id="blwp_telegram_bot_token" name="blwp_telegram_bot_token"
+                           value="" placeholder="<?php esc_attr_e('Deixe em branco para manter o atual', 'dolutech-blacklist-protect'); ?>"
+                           style="width: 400px;" />
+                    <p class="description">
+                        <?php esc_html_e('Token do bot criado com @BotFather no Telegram.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row">
+                    <label for="blwp_telegram_chat_id">
+                        <?php esc_html_e('Chat ID', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="text" id="blwp_telegram_chat_id" name="blwp_telegram_chat_id"
+                           value="<?php echo esc_attr($telegram_chat_id); ?>"
+                           placeholder="-1001234567890" style="width: 400px;" />
+                    <p class="description">
+                        <?php esc_html_e('ID do chat ou grupo que receberá os alertas.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            </tbody>
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Webhook', 'dolutech-blacklist-protect'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="blwp_webhook_enabled" id="blwp_webhook_enabled" <?php checked($webhook_enabled, 1); ?> />
+                        <?php esc_html_e('Ativar notificações via Webhook (Slack, Discord, Zapier...)', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </td>
+            </tr>
+            <tbody id="webhook_settings" style="<?php echo $webhook_enabled ? '' : 'display:none;'; ?>">
+            <tr>
+                <th scope="row">
+                    <label for="blwp_webhook_url">
+                        <?php esc_html_e('Webhook URL', 'dolutech-blacklist-protect'); ?>
+                    </label>
+                </th>
+                <td>
+                    <input type="url" id="blwp_webhook_url" name="blwp_webhook_url"
+                           value="<?php echo esc_attr($webhook_url); ?>"
+                           placeholder="https://hooks.slack.com/services/..." style="width: 400px;" />
+                    <p class="description">
+                        <?php esc_html_e('URL que receberá um POST JSON com os dados do evento.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            </tbody>
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Eventos que disparam notificação', 'dolutech-blacklist-protect'); ?>
+                </th>
+                <td>
+                    <?php
+                    $event_labels = blwp_get_event_labels();
+                    unset($event_labels['test']); // Teste não é selecionável
+                    foreach ($event_labels as $key => $label) : ?>
+                        <label style="display: block; margin-bottom: 4px;">
+                            <input type="checkbox" name="blwp_notify_events[]" value="<?php echo esc_attr($key); ?>"
+                                   <?php checked(in_array($key, $notify_events, true)); ?> />
+                            <?php echo esc_html($label); ?>
+                        </label>
+                    <?php endforeach; ?>
+                    <p class="description">
+                        <?php esc_html_e('Deixe todos desmarcados para notificar em todos os eventos.', 'dolutech-blacklist-protect'); ?>
+                    </p>
+                </td>
+            </tr>
+            </table>
+            <p>
+                <input type="submit" name="blwp_save_notification_settings" value="<?php esc_attr_e('Salvar Configurações de Notificações', 'dolutech-blacklist-protect'); ?>" class="button button-primary" />
+                <input type="submit" name="blwp_test_notification" value="<?php esc_attr_e('Enviar Notificação de Teste', 'dolutech-blacklist-protect'); ?>" class="button button-secondary" />
+            </p>
+        </form>
+
+        <script>
+            document.getElementById('blwp_telegram_enabled').addEventListener('change', function() {
+                var settings = document.getElementById('telegram_settings');
+                settings.style.display = this.checked ? '' : 'none';
+            });
+            document.getElementById('blwp_webhook_enabled').addEventListener('change', function() {
+                var settings = document.getElementById('webhook_settings');
+                settings.style.display = this.checked ? '' : 'none';
+            });
         </script>
     </div>
 

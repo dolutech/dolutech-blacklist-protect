@@ -38,6 +38,16 @@ $options = [
     'blwp_maxmind_api_key',
     'blwp_blocked_countries',
     'blwp_last_fetch_stats',
+    'blwp_cidr_blocked',
+    'blwp_ua_blocked',
+    'blwp_ua_block_enabled',
+    'blwp_telegram_enabled',
+    'blwp_telegram_bot_token',
+    'blwp_telegram_chat_id',
+    'blwp_webhook_enabled',
+    'blwp_webhook_url',
+    'blwp_notify_events',
+    'blwp_log_retention_days',
 ];
 
 foreach ($options as $option) {
@@ -56,6 +66,12 @@ $wpdb->query(
 
 // Remove cron e arquivos de log.
 wp_clear_scheduled_hook('blwp_update_blacklist_hook');
+wp_clear_scheduled_hook('blwp_daily_maintenance_hook');
+
+// Remove tabela de logs.
+global $wpdb;
+$logs_table = $wpdb->prefix . 'blwp_logs';
+$wpdb->query("DROP TABLE IF EXISTS {$logs_table}");
 
 $upload_dir = wp_upload_dir();
 $log_dir = $upload_dir['basedir'] . '/dolutech-blacklist-protect';

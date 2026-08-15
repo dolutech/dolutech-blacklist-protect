@@ -312,6 +312,28 @@ function blwp_block_blacklisted_ips() {
         return;
     }
 
+    // Bloqueio por faixa CIDR
+    if (blwp_is_cidr_blocked($ip)) {
+        blwp_log_event($ip, 'block_cidr', 'IP em faixa CIDR bloqueada', 'blacklist');
+        status_header(403);
+        wp_die(
+            esc_html__('Acesso bloqueado pelo Dolutech Blacklist Protect.', 'dolutech-blacklist-protect'),
+            esc_html__('Acesso Negado', 'dolutech-blacklist-protect'),
+            ['response' => 403]
+        );
+    }
+
+    // Bloqueio por user-agent
+    if (blwp_is_ua_blocked()) {
+        blwp_log_event($ip, 'block_ua', 'User-agent bloqueado', 'blacklist');
+        status_header(403);
+        wp_die(
+            esc_html__('Acesso bloqueado pelo Dolutech Blacklist Protect.', 'dolutech-blacklist-protect'),
+            esc_html__('Acesso Negado', 'dolutech-blacklist-protect'),
+            ['response' => 403]
+        );
+    }
+
     // Verifica bloqueios temporários primeiro
     $temp_blocks = get_option('blwp_temp_blocked_ips', []);
     if (isset($temp_blocks[$ip])) {
@@ -319,6 +341,7 @@ function blwp_block_blacklisted_ips() {
             // Ainda está no período de bloqueio temporário
             $remaining_time = $temp_blocks[$ip] - time();
             $minutes_remaining = ceil($remaining_time / 60);
+            blwp_log_event($ip, 'block_temp', 'Bloqueio temporário ativo', 'manual');
             blwp_show_temp_blocked_page($ip, $minutes_remaining);
             exit;
         } else {
@@ -343,7 +366,14 @@ function blwp_block_blacklisted_ips() {
         
         // Determina se o IP está na lista manual (pode solicitar desbloqueio)
         $is_manual_block = in_array($ip, $manual, true);
-        
+
+        blwp_log_event(
+            $ip,
+            $is_manual_block ? 'block_manual' : 'block_blacklist',
+            'IP bloqueado',
+            $is_manual_block ? 'manual' : 'blacklist'
+        );
+
         status_header(403);
         ?>
         <!DOCTYPE html>
@@ -494,6 +524,8 @@ function blwp_show_unblock_request_page($ip) {
         foreach ($admins as $admin) {
             wp_mail($admin->user_email, $subject, $message, $headers);
         }
+
+        blwp_log_event($ip, 'unblock_request', 'Solicitação de desbloqueio enviada', 'manual');
         
         ?>
         <!DOCTYPE html>
@@ -720,6 +752,8 @@ function blwp_process_unblock_token() {
             
             // Limpa tentativas de login falhas
             delete_transient('blwp_failed_attempts_' . $ip);
+
+            blwp_log_event($ip, 'unblock', 'IP desbloqueado via token', 'admin');
             
             wp_die(
                 sprintf(
@@ -956,6 +990,8 @@ function blwp_block_ip_for_specific_users($username, $password) {
                     $username
                 )
             );
+
+            blwp_log_event($ip, 'username', sprintf('Tentativa com usuário protegido: %s', $username), 'username');
             
             // Redireciona para página de bloqueio ou mata a requisição
             wp_die(
@@ -1022,6 +1058,8 @@ function blwp_track_failed_login($username) {
                     $block_duration
                 )
             );
+
+            blwp_log_event($ip, 'bruteforce', sprintf('Bloqueio após %d tentativas de login falhas', $max_attempts), 'bruteforce');
         } else {
             // Bloqueio permanente (comportamento original)
             $manual = get_option('blwp_manual_blocked_ips', []);
@@ -1037,6 +1075,8 @@ function blwp_track_failed_login($username) {
                     )
                 );
             }
+
+            blwp_log_event($ip, 'bruteforce', sprintf('Bloqueio após %d tentativas de login falhas', $max_attempts), 'bruteforce');
         }
         // Limpa o contador de tentativas após bloqueio
         delete_transient($transient_key);
@@ -1207,6 +1247,8 @@ function blwp_protect_xmlrpc() {
                 delete_transient($log_key);
             }
         }
+
+        blwp_log_event($ip, 'xmlrpc', 'Acesso ao XML-RPC bloqueado', 'xmlrpc');
         
         // Bloqueia o acesso
         status_header(403);

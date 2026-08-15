@@ -4,7 +4,7 @@ Tags: security, blacklist, ip-block, geolocation, brute-force
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,13 @@ Sim! GitHub: [https://github.com/dolutech](https://github.com/dolutech) | Sugest
 8. Proteção XML-RPC com opções completas e parciais
 
 == Changelog ==
+
+= 0.9.0 =
+* **Novo**: Registro de eventos de segurança com painel completo (filtros, paginação, limpeza)
+* **Novo**: Bloqueio por faixa CIDR (IPv4 e IPv6) e por user-agent
+* **Novo**: REST API para gestão de bloqueios, logs e atualização da blacklist (Application Passwords)
+* **Novo**: Notificações via Telegram e Webhook para eventos de bloqueio
+* **Melhoria**: Cron diário de manutenção com purga automática de logs antigos
 
 = 0.8.0 =
 * **Compatibilidade**: Testado até WordPress 7.1
@@ -240,6 +247,9 @@ Este plugin conecta-se a serviços externos para funcionalidade completa:
 - Exemplos: SpamHaus, AbuseIPDB, etc.
 
 == Upgrade Notice ==
+
+= 0.9.0 =
+Novas funcionalidades: painel de logs de eventos, bloqueio CIDR/user-agent, REST API e notificações Telegram/Webhook.
 
 = 0.8.0 =
 Correções de segurança e performance: reCAPTCHA corrigido, denúncias respeitam o toggle, rate-limits nos formulários, chave secreta hasheada, admin mais rápido e compatível com WordPress 7.1.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dolutech Blacklist Protect
  * Description: Proteção via blacklist automática da Dolutech, sistema de bruteforce com denúncia automática, bloqueio de IPs personalizados e geolocalização MaxMind.
- * Version: 0.8.0
+ * Version: 0.9.0
  * Requires at least: 6.7
  * Requires PHP: 8.2
  * Tested up to: 7.1
@@ -20,13 +20,18 @@ if (!defined('ABSPATH')) {
 
 define('BLWP_DIR', plugin_dir_path(__FILE__));
 define('BLWP_URL', plugin_dir_url(__FILE__));
-define('BLWP_VERSION', '0.8.0');
+define('BLWP_VERSION', '0.9.0');
 
 require_once BLWP_DIR . 'includes/functions.php';
 require_once BLWP_DIR . 'includes/admin-page.php';
 require_once BLWP_DIR . 'includes/cron-jobs.php';
 require_once BLWP_DIR . 'includes/integration-security-plugins.php';
 require_once BLWP_DIR . 'includes/maxmind-integration.php';
+require_once BLWP_DIR . 'includes/logs.php';
+require_once BLWP_DIR . 'includes/cidr-ua.php';
+require_once BLWP_DIR . 'includes/notifications.php';
+require_once BLWP_DIR . 'includes/rest-api.php';
+require_once BLWP_DIR . 'includes/admin-logs-page.php';
 
 add_action('init', 'blwp_load_textdomain');
 function blwp_load_textdomain() {
@@ -67,10 +72,19 @@ function blwp_activate_plugin() {
     if (!empty($ips)) {
         update_option('blwp_blacklisted_ips', is_array($ips) ? implode(PHP_EOL, $ips) : $ips, false);
     }
+
+    // Cria tabela de logs
+    blwp_create_logs_table();
+
+    // Cron diário de manutenção (purge de logs antigos)
+    if (!wp_next_scheduled('blwp_daily_maintenance_hook')) {
+        wp_schedule_event(time(), 'daily', 'blwp_daily_maintenance_hook');
+    }
 }
 
 function blwp_deactivate_plugin() {
     wp_clear_scheduled_hook('blwp_update_blacklist_hook');
+    wp_clear_scheduled_hook('blwp_daily_maintenance_hook');
 }
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'blwp_add_plugin_action_links');

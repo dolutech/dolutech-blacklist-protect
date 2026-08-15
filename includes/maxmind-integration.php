@@ -233,6 +233,8 @@ function blwp_block_by_geolocation() {
     if (blwp_should_block_by_geolocation($ip)) {
         $country = blwp_get_country_from_ip($ip);
 
+        blwp_log_event($ip, 'geo', sprintf('Bloqueio geográfico (país %s)', $country), 'geo');
+
         status_header(403);
         ?>
         <!DOCTYPE html>
