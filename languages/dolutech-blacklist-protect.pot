@@ -1,0 +1,15 @@
+# Copyright (C) 2026 Dolutech
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Dolutech Blacklist Protect 0.8.0\n"
+"Report-Msgid-Bugs-To: suporte@dolutech.com\n"
+"POT-Creation-Date: 2026-08-15 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Dolutech <suporte@dolutech.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Dolutech\n"
+"X-Domain: dolutech-blacklist-protect\n"

@@ -1,0 +1,16 @@
+# security.txt para o plugin Dolutech Blacklist Protect
+# Saiba mais: https://wordpress.org/plugins/dolutech-blacklist-protect
+
+Contact: mailto:security@dolutech.com
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: pt, en
+
+# Nosso plugin Dolutech Blacklist Protect é totalmente gratuito e foi criado com o objetivo de ajudar a comunidade WordPress a se proteger melhor de ameaças.
+# Se você encontrar alguma vulnerabilidade ou falha de segurança, por favor, envie um relatório para security@dolutech.com.
+
+# Valorizamos muito cada colaboração da comunidade e, como forma de gratidão, publicaremos seu nome no nosso Hall da Fama:
+# https://dolutech.com/hall-da-fama-do-blog-dolutech/
+
+# Nós não lucramos com o plugin, mas oferecemos um palco para que você seja reconhecido como um verdadeiro pesquisador de segurança.
+
+Acknowledgments: https://dolutech.com/hall-da-fama-do-blog-dolutech/

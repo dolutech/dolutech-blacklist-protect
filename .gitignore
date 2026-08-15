@@ -1,0 +1,23 @@
+# Estado local do Command Code (permissões, taste, sessões)
+.commandcode/
+
+# Artefatos de build e cache
+*.log
+*.cache
+.DS_Store
+Thumbs.db
+
+# Ambiente WordPress (nunca versionar wp-config com credenciais)
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+
+# IDEs e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependências (caso o plugin venha a usar composer/npm)
+/vendor/
+/node_modules/
