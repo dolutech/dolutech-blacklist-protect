@@ -6,11 +6,16 @@ if (!defined('ABSPATH')) {
 
 /**
  * Obtém o IP real do cliente, considerando proxy reverso/CDN configurado.
+ *
+ * Segurança: o modo proxy só confia em X-Forwarded-For quando o site está
+ * comprovadamente atrás de um proxy que SOBRESCREVE esse header (Cloudflare).
+ * O modo 'generic' foi removido — XFF arbitrário é spoofável e derrotaria
+ * todos os rate-limits e bloqueios baseados em IP.
  */
 function blwp_get_client_ip() {
     $ip = '';
 
-    // Confia em X-Forwarded-For apenas se houver proxy reverso configurado.
+    // Confia em X-Forwarded-For apenas com proxy Cloudflare configurado (header reescrito pela CF).
     if (blwp_has_trusted_proxy()) {
         $forwarded = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
             ? sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']))
@@ -35,11 +40,10 @@ function blwp_get_client_ip() {
 }
 
 /**
- * Verifica se o site está atrás de proxy reverso confiável (Cloudflare, CDN, etc.).
+ * Verifica se o site está atrás de proxy reverso confiável (Cloudflare).
  */
 function blwp_has_trusted_proxy() {
-    $mode = get_option('blwp_proxy_mode', 'none'); // none | cloudflare | generic
-    return in_array($mode, ['cloudflare', 'generic'], true);
+    return get_option('blwp_proxy_mode', 'none') === 'cloudflare';
 }
 
 function blwp_get_blacklist_url() {
@@ -69,11 +73,14 @@ function blwp_fetch_blacklist() {
             'total' => count($all_ips),
         ], false);
         
-        // Log das blacklists
+        // Log das blacklists (diretório protegido contra acesso web direto)
         $upload_dir = wp_upload_dir();
         $log_dir   = $upload_dir['basedir'] . '/dolutech-blacklist-protect';
         if (! file_exists($log_dir)) {
             wp_mkdir_p($log_dir);
+            // Bloqueia listagem/acesso direto ao diretório (uploads é web-accessible).
+            file_put_contents($log_dir . '/.htaccess', "Require all denied\n");
+            file_put_contents($log_dir . '/index.php', "<?php\n// Silence is golden.\n");
         }
         $log_file = $log_dir . '/blacklist-log.txt';
         file_put_contents($log_file, implode(PHP_EOL, $all_ips));
@@ -299,11 +306,10 @@ function blwp_is_whitelisted($ip) {
 
 add_action('init', 'blwp_block_blacklisted_ips');
 function blwp_block_blacklisted_ips() {
-    if (! get_option('blwp_blacklist_enabled', 1)) {
-        return;
-    }
-
-    if (is_admin() || defined('DOING_CRON') || php_sapi_name() === 'cli') {
+    // Só ignora sessões reais de admin logado — probes anônimos em /wp-admin
+    // (ex.: admin-ajax.php) continuam sujeitos aos bloqueios.
+    $is_admin_session = is_user_logged_in() && current_user_can('manage_options');
+    if ($is_admin_session || defined('DOING_CRON') || php_sapi_name() === 'cli') {
         return;
     }
 
@@ -312,7 +318,7 @@ function blwp_block_blacklisted_ips() {
         return;
     }
 
-    // Bloqueio por faixa CIDR
+    // Bloqueio por faixa CIDR (independente do toggle global de blacklist)
     if (blwp_is_cidr_blocked($ip)) {
         blwp_log_event($ip, 'block_cidr', 'IP em faixa CIDR bloqueada', 'blacklist');
         status_header(403);
@@ -323,7 +329,7 @@ function blwp_block_blacklisted_ips() {
         );
     }
 
-    // Bloqueio por user-agent
+    // Bloqueio por user-agent (independente do toggle global de blacklist)
     if (blwp_is_ua_blocked()) {
         blwp_log_event($ip, 'block_ua', 'User-agent bloqueado', 'blacklist');
         status_header(403);
@@ -332,6 +338,11 @@ function blwp_block_blacklisted_ips() {
             esc_html__('Acesso Negado', 'dolutech-blacklist-protect'),
             ['response' => 403]
         );
+    }
+
+    // Os bloqueios de blacklist manual/Dolutech respeitam o toggle global.
+    if (!get_option('blwp_blacklist_enabled', 1)) {
+        return;
     }
 
     // Verifica bloqueios temporários primeiro
@@ -484,15 +495,16 @@ function blwp_show_unblock_request_page($ip) {
         
         $token = wp_generate_password(32, false);
         $expiration = time() + DAY_IN_SECONDS; // Token válido por 24 horas
-        
-        // Armazena o token
+
+        // Armazena APENAS o hash do token (nunca o valor em claro) + bind ao IP solicitante.
         $tokens = get_option('blwp_unblock_tokens', []);
-        $tokens[$token] = [
+        $tokens[wp_hash($token)] = [
             'ip' => $ip,
+            'request_ip' => $client_ip,
             'expiration' => $expiration,
             'used' => false
         ];
-        update_option('blwp_unblock_tokens', $tokens);
+        update_option('blwp_unblock_tokens', $tokens, false);
         
         // Envia email para administradores
         $admins = get_users(['role' => 'administrator']);
@@ -683,16 +695,27 @@ function blwp_show_unblock_request_form($ip, $error_message = '') {
 /**
  * Processa tokens de desbloqueio
  */
-add_action('init', 'blwp_process_unblock_token', 5);
+add_action('init', 'blwp_process_unblock_token', 1);
 function blwp_process_unblock_token() {
     // phpcs:disable WordPress.Security.NonceVerification.Recommended
     if (isset($_GET['blwp_token']) && isset($_GET['blwp_action']) && $_GET['blwp_action'] === 'unblock') {
         $token = sanitize_text_field(wp_unslash($_GET['blwp_token']));
         // phpcs:enable WordPress.Security.NonceVerification.Recommended
         $tokens = get_option('blwp_unblock_tokens', []);
-        
-        if (isset($tokens[$token]) && !$tokens[$token]['used'] && $tokens[$token]['expiration'] > time()) {
-            $ip = $tokens[$token]['ip'];
+        $token_hash = wp_hash($token);
+
+        if (isset($tokens[$token_hash]) && !$tokens[$token_hash]['used'] && $tokens[$token_hash]['expiration'] > time()) {
+            $ip = $tokens[$token_hash]['ip'];
+
+            // Bind: só aceita o token se vier do IP que o solicitou (ou de um admin logado).
+            $request_ip = blwp_get_client_ip();
+            $is_admin = is_user_logged_in() && current_user_can('manage_options');
+            if (!$is_admin && isset($tokens[$token_hash]['request_ip']) && $request_ip !== $tokens[$token_hash]['request_ip']) {
+                wp_die(
+                    esc_html__('Este link de desbloqueio só pode ser usado pelo IP que o solicitou.', 'dolutech-blacklist-protect'),
+                    esc_html__('Erro', 'dolutech-blacklist-protect')
+                );
+            }
             
             // Verifica se a chave secreta está habilitada
             $secret_key_enabled = get_option('blwp_secret_key_enabled', 0);
@@ -703,8 +726,10 @@ function blwp_process_unblock_token() {
                 if (isset($_POST['blwp_unblock_secret_key']) && isset($_POST['blwp_secret_nonce']) && 
                     wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['blwp_secret_nonce'])), 'blwp_secret_key_verify')) {
                     
-                    // Rate-limit: máx. 5 tentativas de chave por IP a cada 15 min (anti brute-force)
-                    $rl_key = 'blwp_secret_rl_' . md5(blwp_get_client_ip());
+                    // Rate-limit: máx. 5 tentativas de chave por IP a cada 15 min (anti brute-force).
+                    // Usa REMOTE_ADDR real (não XFF) — decisões de segurança críticas não confiam em header spoofável.
+                    $remote_addr = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+                    $rl_key = 'blwp_secret_rl_' . md5($remote_addr);
                     $attempts = (int) get_transient($rl_key);
                     if ($attempts >= 5) {
                         blwp_show_secret_key_form($token, __('Muitas tentativas. Aguarde 15 minutos.', 'dolutech-blacklist-protect'));
@@ -734,21 +759,16 @@ function blwp_process_unblock_token() {
                 }
             }
             
-            // Remove o IP da lista de bloqueio manual
+            // Marca o token como usado ANTES de desbloquear (single-use estrito)
+            $tokens[$token_hash]['used'] = true;
+            update_option('blwp_unblock_tokens', $tokens, false);
+            
+            // Remove o IP APENAS da lista de bloqueio manual.
+            // Bloqueios temporários (brute-force/XML-RPC) NÃO são removidos por token —
+            // eles expiram sozinhos e não devem ser contornados por um link de e-mail.
             $manual = get_option('blwp_manual_blocked_ips', []);
             $manual = array_diff($manual, [$ip]);
             update_option('blwp_manual_blocked_ips', $manual);
-            
-            // Remove o IP da lista de bloqueio temporário
-            $temp_blocks = get_option('blwp_temp_blocked_ips', []);
-            if (isset($temp_blocks[$ip])) {
-                unset($temp_blocks[$ip]);
-                update_option('blwp_temp_blocked_ips', $temp_blocks);
-            }
-            
-            // Marca o token como usado
-            $tokens[$token]['used'] = true;
-            update_option('blwp_unblock_tokens', $tokens);
             
             // Limpa tentativas de login falhas
             delete_transient('blwp_failed_attempts_' . $ip);
@@ -916,7 +936,7 @@ function blwp_clean_expired_tokens() {
         }
     }
     
-    update_option('blwp_unblock_tokens', $tokens);
+    update_option('blwp_unblock_tokens', $tokens, false);
 }
 
 /**
@@ -1243,7 +1263,10 @@ function blwp_protect_xmlrpc() {
                     $ip,
                     sprintf('Bloqueio automático por %d tentativas de acesso ao XML-RPC', $max_xmlrpc_attempts)
                 );
-                
+
+                // Evento próprio do bloqueio por threshold (distingue de simples probe)
+                blwp_log_event($ip, 'bruteforce', sprintf('Bloqueio após %d tentativas de acesso ao XML-RPC', $max_xmlrpc_attempts), 'xmlrpc');
+
                 delete_transient($log_key);
             }
         }

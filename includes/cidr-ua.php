@@ -44,7 +44,8 @@ function blwp_ip_in_cidr($ip, $cidr) {
     // Máscara binária.
     $mask = str_repeat("\xff", intdiv($prefix, 8));
     if ($prefix % 8 !== 0) {
-        $mask .= chr(0xff << (8 - ($prefix % 8)));
+        // & 0xff: chr() exige byte em [0,255] (PHP 8.5+ deprecia valores fora).
+        $mask .= chr((0xff << (8 - ($prefix % 8))) & 0xff);
     }
     $mask = str_pad($mask, strlen($ip_bin), "\x00");
 
@@ -109,6 +110,10 @@ function blwp_is_valid_cidr($cidr) {
         return false;
     }
     if (isset($parts[1])) {
+        // Exige que o prefixo seja um inteiro real (evita (int)'abc' = 0).
+        if (!preg_match('/^\d{1,3}$/', $parts[1])) {
+            return false;
+        }
         $prefix = (int) $parts[1];
         $max = (strpos($ip, ':') !== false) ? 128 : 32;
         if ($prefix < 0 || $prefix > $max) {

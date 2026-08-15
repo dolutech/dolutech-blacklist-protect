@@ -48,6 +48,8 @@ $options = [
     'blwp_webhook_url',
     'blwp_notify_events',
     'blwp_log_retention_days',
+    'blwp_proxy_mode',
+    'blwp_version',
 ];
 
 foreach ($options as $option) {
@@ -71,6 +73,7 @@ wp_clear_scheduled_hook('blwp_daily_maintenance_hook');
 // Remove tabela de logs.
 global $wpdb;
 $logs_table = $wpdb->prefix . 'blwp_logs';
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $logs_table usa $wpdb->prefix (nunca input do usuário).
 $wpdb->query("DROP TABLE IF EXISTS {$logs_table}");
 
 $upload_dir = wp_upload_dir();

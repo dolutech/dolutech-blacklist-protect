@@ -147,7 +147,7 @@ function blwp_rest_get_logs($request) {
         'event_type' => sanitize_text_field($request->get_param('event_type')),
         'source'     => sanitize_text_field($request->get_param('source')),
         'page'       => (int) $request->get_param('page'),
-        'per_page'   => min((int) ($request->get_param('per_page') ?: 20), 100),
+        'per_page'   => max(1, min((int) ($request->get_param('per_page') ?: 20), 100)),
     ];
     $items = blwp_get_logs($args);
     $total = blwp_count_logs($args);

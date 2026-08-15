@@ -41,6 +41,29 @@ function blwp_load_textdomain() {
 register_activation_hook(__FILE__, 'blwp_activate_plugin');
 register_deactivation_hook(__FILE__, 'blwp_deactivate_plugin');
 
+/**
+ * Upgrade path: garante tabela de logs e cron diário também em sites que
+ * atualizam o plugin via auto-update (activation hook não dispara em update).
+ */
+add_action('admin_init', 'blwp_maybe_upgrade');
+function blwp_maybe_upgrade() {
+    if (get_option('blwp_version', '0') === BLWP_VERSION) {
+        return;
+    }
+
+    if (!wp_next_scheduled('blwp_update_blacklist_hook')) {
+        wp_schedule_event(time(), 'twicedaily', 'blwp_update_blacklist_hook');
+    }
+
+    blwp_create_logs_table();
+
+    if (!wp_next_scheduled('blwp_daily_maintenance_hook')) {
+        wp_schedule_event(time(), 'daily', 'blwp_daily_maintenance_hook');
+    }
+
+    update_option('blwp_version', BLWP_VERSION);
+}
+
 function blwp_activate_plugin() {
     if (version_compare(PHP_VERSION, '8.2', '<')) {
         deactivate_plugins(plugin_basename(__FILE__));
@@ -65,7 +88,10 @@ function blwp_activate_plugin() {
         wp_schedule_event(time(), 'twicedaily', 'blwp_update_blacklist_hook');
     }
 
-    update_option('blwp_blacklist_enabled', 1);
+    // Só define o default quando a opção ainda não existe (não sobrescreve "off" em reativação).
+    if (get_option('blwp_blacklist_enabled', null) === null) {
+        update_option('blwp_blacklist_enabled', 1);
+    }
 
     // Migração 0.7 → 0.8: blacklist em string com autoload off (performance)
     $ips = get_option('blwp_blacklisted_ips', []);
@@ -80,6 +106,8 @@ function blwp_activate_plugin() {
     if (!wp_next_scheduled('blwp_daily_maintenance_hook')) {
         wp_schedule_event(time(), 'daily', 'blwp_daily_maintenance_hook');
     }
+
+    update_option('blwp_version', BLWP_VERSION);
 }
 
 function blwp_deactivate_plugin() {

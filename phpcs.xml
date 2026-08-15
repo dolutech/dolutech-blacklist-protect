@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<ruleset name="Dolutech Blacklist Protect">
+    <description>Regras de codificação para o plugin</description>
+
+    <file>.</file>
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <arg name="extensions" value="php"/>
+    <arg value="p"/>
+
+    <rule ref="WordPress">
+        <!-- Funções globais com prefixo blwp_ são o padrão procedural do plugin -->
+        <exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound"/>
+        <exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound"/>
+        <exclude name="WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound"/>
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <!-- Código legado: todas as strings de tradução já usam o domínio -->
+        <exclude name="WordPress.WP.I18n.MissingTranslatorsComment"/>
+        <!-- HTML inline nas páginas de bloqueio (standalone) -->
+        <exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
+        <exclude name="WordPress.Security.ValidatedSanitizedInput"/>
+    </rule>
+</ruleset>

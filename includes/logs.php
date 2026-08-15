@@ -30,6 +30,7 @@ function blwp_create_logs_table() {
       KEY event_type (event_type),
       KEY timestamp (timestamp)
     ) {$charset};";
+    // phpstan-ignore requireOnce.fileNotFound -- ABSPATH é resolvido em runtime pelo WordPress.
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta($sql);
 }
@@ -46,12 +47,24 @@ function blwp_log_event($ip, $event_type, $reason, $source) {
     global $wpdb;
     $table = $wpdb->prefix . 'blwp_logs';
 
+    // Self-heal: se a tabela não existe (ex.: site atualizado antes do upgrade path),
+    // cria uma vez por requisição e tenta de novo.
+    static $table_checked = false;
+    if (!$table_checked) {
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix.
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+        if (!$exists) {
+            blwp_create_logs_table();
+        }
+        $table_checked = true;
+    }
+
     $user_agent = isset($_SERVER['HTTP_USER_AGENT'])
         ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT']))
         : '';
 
     $data = [
-        'timestamp'  => current_time('mysql'),
+        'timestamp'  => gmdate('Y-m-d H:i:s'), // UTC, consistente com o purge.
         'ip'         => substr((string) $ip, 0, 45),
         'event_type' => substr((string) $event_type, 0, 50),
         'reason'     => substr((string) $reason, 0, 255),
@@ -98,7 +111,8 @@ function blwp_get_logs($args = []) {
     $params[] = $per_page;
     $params[] = $offset;
 
-    return $wpdb->get_results($wpdb->prepare($sql, $params));
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where usa apenas placeholders controlados.
+    return $wpdb->get_results($wpdb->prepare($sql, $params), ARRAY_A);
 }
 
 /**
@@ -127,6 +141,7 @@ function blwp_count_logs($args = []) {
     }
 
     $sql = "SELECT COUNT(*) FROM {$table} WHERE " . implode(' AND ', $where);
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where usa apenas placeholders controlados.
     return (int) $wpdb->get_var($wpdb->prepare($sql, $params));
 }
 
@@ -136,6 +151,7 @@ function blwp_count_logs($args = []) {
 function blwp_clear_logs() {
     global $wpdb;
     $table = $wpdb->prefix . 'blwp_logs';
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix (nunca input do usuário).
     $wpdb->query("TRUNCATE TABLE {$table}");
 }
 
@@ -147,6 +163,7 @@ function blwp_purge_old_logs() {
     $table = $wpdb->prefix . 'blwp_logs';
     $days = max(1, (int) get_option('blwp_log_retention_days', 30));
     $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * DAY_IN_SECONDS));
+    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix; $cutoff é gerado internamente e passado ao prepare.
     $wpdb->query($wpdb->prepare("DELETE FROM {$table} WHERE timestamp < %s", $cutoff));
 }
 

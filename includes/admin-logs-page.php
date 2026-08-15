@@ -96,26 +96,26 @@ class BLWP_Logs_Table extends WP_List_Table {
         $this->set_pagination_args([
             'total_items' => $total,
             'per_page'    => $per_page,
-            'total_pages' => ceil($total / $per_page),
+            'total_pages' => (int) ceil($total / $per_page),
         ]);
     }
 
     public function column_default($item, $column_name) {
         switch ($column_name) {
             case 'timestamp':
-                return esc_html(wp_date('d/m/Y H:i:s', strtotime($item->timestamp)));
+                return esc_html(wp_date('d/m/Y H:i:s', strtotime((string) $item['timestamp'])));
             case 'ip':
-                return esc_html($item->ip ? $item->ip : '-');
+                return esc_html($item['ip'] ? $item['ip'] : '-');
             case 'event_type':
                 $labels = blwp_get_event_labels();
-                return esc_html($labels[$item->event_type] ?? $item->event_type);
+                return esc_html($labels[$item['event_type']] ?? $item['event_type']);
             case 'reason':
-                return esc_html($item->reason);
+                return esc_html($item['reason']);
             case 'source':
                 $labels = blwp_get_source_labels();
-                return esc_html($labels[$item->source] ?? $item->source);
+                return esc_html($labels[$item['source']] ?? $item['source']);
             case 'user_agent':
-                return esc_html($item->user_agent ? $item->user_agent : '-');
+                return esc_html($item['user_agent'] ? $item['user_agent'] : '-');
         }
         return '';
     }

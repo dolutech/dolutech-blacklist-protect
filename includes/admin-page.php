@@ -122,8 +122,9 @@ function blwp_render_settings_page() {
 
         // Eventos que disparam notificação
         $event_labels = blwp_get_event_labels();
-        $notify_events = isset($_POST['blwp_notify_events']) ? (array) $_POST['blwp_notify_events'] : [];
-        $notify_events = array_values(array_filter(array_map('sanitize_key', $notify_events), function ($key) use ($event_labels) {
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cada elemento é sanitizado com sanitize_key abaixo.
+        $notify_events_raw = isset($_POST['blwp_notify_events']) ? wp_unslash((array) $_POST['blwp_notify_events']) : [];
+        $notify_events = array_values(array_filter(array_map('sanitize_key', $notify_events_raw), function ($key) use ($event_labels) {
             return isset($event_labels[$key]);
         }));
         update_option('blwp_notify_events', $notify_events);
@@ -145,16 +146,30 @@ function blwp_render_settings_page() {
                 $list[] = $ip;
                 update_option('blwp_manual_blocked_ips', $list);
                 blwp_log_event($ip, 'admin_block', 'Bloqueio manual pelo admin', 'admin');
+                echo '<div class="notice notice-success"><p>' . esc_html__('IP bloqueado manualmente.', 'dolutech-blacklist-protect') . '</p></div>';
+            } else {
+                echo '<div class="notice notice-warning"><p>' . esc_html__('Este IP já está na lista de bloqueio manual.', 'dolutech-blacklist-protect') . '</p></div>';
             }
+        } else {
+            echo '<div class="notice notice-error"><p>' . esc_html__('IP inválido. Nenhum bloqueio realizado.', 'dolutech-blacklist-protect') . '</p></div>';
         }
     }
 
     if (isset($_POST['blwp_remove_manual_block']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
         $remove_ip = isset($_POST['remove_ip']) ? sanitize_text_field(wp_unslash($_POST['remove_ip'])) : '';
-        $list = blwp_get_manual_blocked_ips();
-        $list = array_diff($list, [$remove_ip]);
-        update_option('blwp_manual_blocked_ips', $list);
-        blwp_log_event($remove_ip, 'admin_unblock', 'Desbloqueio manual pelo admin', 'admin');
+        if (filter_var($remove_ip, FILTER_VALIDATE_IP)) {
+            $list = blwp_get_manual_blocked_ips();
+            if (in_array($remove_ip, $list, true)) {
+                $list = array_diff($list, [$remove_ip]);
+                update_option('blwp_manual_blocked_ips', $list);
+                blwp_log_event($remove_ip, 'admin_unblock', 'Desbloqueio manual pelo admin', 'admin');
+                echo '<div class="notice notice-success"><p>' . esc_html__('IP desbloqueado.', 'dolutech-blacklist-protect') . '</p></div>';
+            } else {
+                echo '<div class="notice notice-warning"><p>' . esc_html__('Este IP não está na lista de bloqueio manual.', 'dolutech-blacklist-protect') . '</p></div>';
+            }
+        } else {
+            echo '<div class="notice notice-error"><p>' . esc_html__('IP inválido. Nenhum desbloqueio realizado.', 'dolutech-blacklist-protect') . '</p></div>';
+        }
     }
 
     if (isset($_POST['blwp_manual_update']) && check_admin_referer('blwp_nonce_action', 'blwp_nonce_field')) {
@@ -480,8 +495,8 @@ function blwp_render_settings_page() {
         <div style="margin: 15px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #0073aa;">
             <p style="margin: 5px 0;"><strong><?php esc_html_e('Detalhamento:', 'dolutech-blacklist-protect'); ?></strong></p>
             <p style="margin: 5px 0;">• <?php esc_html_e('Blacklist Dolutech:', 'dolutech-blacklist-protect'); ?> <?php echo esc_html($fetch_stats['dolutech']); ?> IPs</p>
-            <p style="margin: 5px 0;">• <?php esc_html_e('Blacklists de Terceiros:', 'dolutech-blacklist-protect'); ?> <?php echo esc_html($third_party_total); ?> IPs</p>
-            <p style="margin: 5px 0;">• <?php esc_html_e('IPs Bloqueados Manualmente:', 'dolutech-blacklist-protect'); ?> <?php echo esc_html(count($manual_blocked)); ?></p>
+            <p style="margin: 5px 0;">• <?php esc_html_e('Blacklists de Terceiros:', 'dolutech-blacklist-protect'); ?> <?php echo esc_html((string) $third_party_total); ?> IPs</p>
+            <p style="margin: 5px 0;">• <?php esc_html_e('IPs Bloqueados Manualmente:', 'dolutech-blacklist-protect'); ?> <?php echo esc_html((string) count($manual_blocked)); ?></p>
         </div>
         
         <p><strong><?php esc_html_e('Última atualização:', 'dolutech-blacklist-protect'); ?></strong> <?php echo esc_html($last_update); ?></p>
@@ -682,7 +697,7 @@ function blwp_render_settings_page() {
                     <?php if (!empty($blocked_usernames)) : ?>
                         <div style="margin-top: 15px; padding: 10px; background: #f0f8ff; border-left: 4px solid #0073aa;">
                             <strong><?php esc_html_e('Usuários ativos na lista:', 'dolutech-blacklist-protect'); ?></strong>
-                            <?php echo esc_html(count($blocked_usernames)); ?>
+                            <?php echo esc_html((string) count($blocked_usernames)); ?>
                             <ul style="margin: 5px 0 0 20px;">
                                 <?php foreach ($blocked_usernames as $username) : ?>
                                     <li><?php echo esc_html($username); ?></li>
@@ -1361,8 +1376,8 @@ function blwp_render_settings_page() {
                                 } else {
                                     echo esc_html(sprintf(
                                         /* translators: %d: number of minutes remaining */
-                                        _n('%d minuto', '%d minutos', $minutes, 'dolutech-blacklist-protect'),
-                                        $minutes
+                                        _n('%d minuto', '%d minutos', (int) $minutes, 'dolutech-blacklist-protect'),
+                                        (int) $minutes
                                     ));
                                 }
                                 ?>

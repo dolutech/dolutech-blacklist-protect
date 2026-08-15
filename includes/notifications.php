@@ -16,12 +16,26 @@ if (!defined('ABSPATH')) {
  * @param string $event_type Tipo do evento.
  * @param string $ip         Endereço IP (pode ser vazio).
  * @param string $reason     Descrição.
+ * @param bool   $force      Ignora o filtro de eventos (usado no teste).
  */
-function blwp_send_notifications($event_type, $ip, $reason) {
+function blwp_send_notifications($event_type, $ip, $reason, $force = false) {
     // Filtra pelos eventos selecionados
     $enabled_events = get_option('blwp_notify_events', []);
-    if (!empty($enabled_events) && !in_array($event_type, $enabled_events, true)) {
+    if (!$force && !empty($enabled_events) && !in_array($event_type, $enabled_events, true)) {
         return;
+    }
+
+    // Throttle: máx. 1 notificação por IP+evento a cada 60s.
+    // Um bot martelando um IP bloqueado não pode virar storm de outbound
+    // (rate limits do Telegram/webhook e lixo nos logs).
+    // Nota: eventos com IP vazio (ex.: bloqueio CIDR via REST) não passam pelo
+    // throttle — exigem credencial admin, risco aceito.
+    if (!$force && $ip !== '') {
+        $throttle_key = 'blwp_notify_rl_' . md5($ip . '|' . $event_type);
+        if (get_transient($throttle_key)) {
+            return;
+        }
+        set_transient($throttle_key, 1, MINUTE_IN_SECONDS);
     }
 
     $text = sprintf(
@@ -93,8 +107,8 @@ function blwp_send_webhook($payload) {
 }
 
 /**
- * Envia notificação de teste (botão no admin).
+ * Envia notificação de teste (botão no admin) — ignora o filtro de eventos.
  */
 function blwp_test_notifications() {
-    blwp_send_notifications('test', '127.0.0.1', 'Notificação de teste do Dolutech Blacklist Protect');
+    blwp_send_notifications('test', '127.0.0.1', 'Notificação de teste do Dolutech Blacklist Protect', true);
 }

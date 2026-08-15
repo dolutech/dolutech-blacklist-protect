@@ -21,3 +21,19 @@ wp-content/cache/
 # Dependências (caso o plugin venha a usar composer/npm)
 /vendor/
 /node_modules/
+
+# Docker (ambientes de teste/desenvolvimento locais — nunca versionar)
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.docker/
+docker-data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Testes e análise estática (artefatos locais)
+.phpunit.cache/
+.phpunit.result.cache
+tests/phpstan-constants.php
+coverage/
