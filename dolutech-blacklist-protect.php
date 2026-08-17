@@ -31,7 +31,10 @@ require_once BLWP_DIR . 'includes/logs.php';
 require_once BLWP_DIR . 'includes/cidr-ua.php';
 require_once BLWP_DIR . 'includes/notifications.php';
 require_once BLWP_DIR . 'includes/rest-api.php';
-require_once BLWP_DIR . 'includes/admin-logs-page.php';
+
+if (is_admin()) {
+    require_once BLWP_DIR . 'includes/admin-logs-page.php';
+}
 
 add_action('init', 'blwp_load_textdomain');
 function blwp_load_textdomain() {

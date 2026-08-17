@@ -49,7 +49,15 @@ function blwp_get_source_labels() {
 
 /**
  * Lista de logs (WP_List_Table).
+ *
+ * WP_List_Table não é autoload: o core só a inclui em telas admin específicas.
+ * Sem este require o plugin quebra ao carregar (ex.: plugins.php).
  */
+if (!class_exists('WP_List_Table')) {
+    // phpstan-ignore requireOnce.fileNotFound -- ABSPATH é resolvido em runtime pelo WordPress.
+    require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
+}
+
 class BLWP_Logs_Table extends WP_List_Table {
 
     /** @var array Filtros ativos. */
