@@ -100,7 +100,7 @@ Yes. Configure your Google reCAPTCHA v2 keys under **Settings** -> **reCAPTCHA**
 
 = How can I protect specific usernames? =
 
-Use **Specific User Blocking** and add usernames such as "admin" and "root". Any login attempt with a protected username blocks the IP immediately.
+Use **Specific User Blocking** and add usernames such as "admin" and "root". Any login attempt with a protected username that does not exist blocks the IP immediately.
 
 = Is XML-RPC completely disabled? =
 
