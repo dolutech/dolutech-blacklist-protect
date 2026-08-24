@@ -51,7 +51,7 @@ function blwp_log_event($ip, $event_type, $reason, $source) {
     // cria uma vez por requisição e tenta de novo.
     static $table_checked = false;
     if (!$table_checked) {
-        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom log tables have no equivalent in the WordPress Options API.
         $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
         if (!$exists) {
             blwp_create_logs_table();
@@ -107,11 +107,10 @@ function blwp_get_logs($args = []) {
     $page = isset($args['page']) ? max(1, (int) $args['page']) : 1;
     $offset = ($page - 1) * $per_page;
 
-    $sql = "SELECT * FROM {$table} WHERE " . implode(' AND ', $where) . " ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d";
-    $params[] = $per_page;
-    $params[] = $offset;
+    $sql = 'SELECT * FROM %i WHERE ' . implode(' AND ', $where) . ' ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d';
+    $params = array_merge([$table], $params, [$per_page, $offset]);
 
-    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where usa apenas placeholders controlados.
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
     return $wpdb->get_results($wpdb->prepare($sql, $params), ARRAY_A);
 }
 
@@ -140,8 +139,10 @@ function blwp_count_logs($args = []) {
         $params[] = sanitize_text_field($args['source']);
     }
 
-    $sql = "SELECT COUNT(*) FROM {$table} WHERE " . implode(' AND ', $where);
-    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $where usa apenas placeholders controlados.
+    $sql = 'SELECT COUNT(*) FROM %i WHERE ' . implode(' AND ', $where);
+    $params = array_merge([$table], $params);
+
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
     return (int) $wpdb->get_var($wpdb->prepare($sql, $params));
 }
 
@@ -151,8 +152,8 @@ function blwp_count_logs($args = []) {
 function blwp_clear_logs() {
     global $wpdb;
     $table = $wpdb->prefix . 'blwp_logs';
-    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix (nunca input do usuário).
-    $wpdb->query("TRUNCATE TABLE {$table}");
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- Clearing the custom log table is an explicit admin action.
+    $wpdb->query($wpdb->prepare('TRUNCATE TABLE %i', $table));
 }
 
 /**
@@ -163,8 +164,8 @@ function blwp_purge_old_logs() {
     $table = $wpdb->prefix . 'blwp_logs';
     $days = max(1, (int) get_option('blwp_log_retention_days', 30));
     $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * DAY_IN_SECONDS));
-    // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table usa $wpdb->prefix; $cutoff é gerado internamente e passado ao prepare.
-    $wpdb->query($wpdb->prepare("DELETE FROM {$table} WHERE timestamp < %s", $cutoff));
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Purging the custom log table is performed by the scheduled maintenance task.
+    $wpdb->query($wpdb->prepare('DELETE FROM %i WHERE timestamp < %s', $table, $cutoff));
 }
 
 // Cron diário de manutenção (purge de logs).

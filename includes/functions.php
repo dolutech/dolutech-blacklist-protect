@@ -1349,19 +1349,47 @@ function blwp_verify_recaptcha($response) {
 }
 
 /**
- * Renderiza o script e div do reCAPTCHA
+ * Enqueue the Google reCAPTCHA script on the front end.
+ */
+function blwp_enqueue_recaptcha_script() {
+    if (!blwp_is_recaptcha_enabled()) {
+        return;
+    }
+
+    wp_enqueue_script(
+        'blwp-recaptcha',
+        'https://www.google.com/recaptcha/api.js',
+        [],
+        false,
+        [
+            'in_footer' => true,
+            'strategy'  => 'defer',
+        ]
+    );
+}
+add_action('wp_enqueue_scripts', 'blwp_enqueue_recaptcha_script');
+
+/**
+ * Render the reCAPTCHA widget container.
+ *
+ * The script is enqueued separately so WordPress can place it according to
+ * its dependency and loading strategy rules.
  */
 function blwp_render_recaptcha() {
     if (!blwp_is_recaptcha_enabled()) {
         return '';
     }
 
+    blwp_enqueue_recaptcha_script();
+
+    // Standalone block pages do not run wp_head() or wp_footer().
+    if (!did_action('wp_head') && !did_action('wp_footer')) {
+        wp_print_scripts('blwp-recaptcha');
+    }
+
     $site_key = get_option('blwp_recaptcha_site_key', '');
 
-    // As páginas de bloqueio/desbloqueio são HTML standalone (sem wp_head/wp_footer),
-    // então o script do Google precisa ser impresso inline junto com o widget.
     return sprintf(
-        '<script src="https://www.google.com/recaptcha/api.js" async defer></script>' .
         '<div class="g-recaptcha" data-sitekey="%s" style="margin: 20px 0;"></div>',
         esc_attr($site_key)
     );

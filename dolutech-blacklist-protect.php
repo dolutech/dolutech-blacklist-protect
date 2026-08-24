@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Dolutech Blacklist Protect
- * Description: Proteção via blacklist automática da Dolutech, sistema de bruteforce com denúncia automática, bloqueio de IPs personalizados e geolocalização MaxMind.
+ * Description: Advanced WordPress protection with automatic blacklists, brute-force mitigation, automatic reporting, custom IP blocking, and MaxMind geolocation.
  * Version: 0.9.0
  * Requires at least: 6.7
  * Requires PHP: 8.2
@@ -34,11 +34,6 @@ require_once BLWP_DIR . 'includes/rest-api.php';
 
 if (is_admin()) {
     require_once BLWP_DIR . 'includes/admin-logs-page.php';
-}
-
-add_action('init', 'blwp_load_textdomain');
-function blwp_load_textdomain() {
-    load_plugin_textdomain('dolutech-blacklist-protect', false, dirname(plugin_basename(__FILE__)) . '/languages');
 }
 
 register_activation_hook(__FILE__, 'blwp_activate_plugin');

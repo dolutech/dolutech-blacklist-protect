@@ -8,277 +8,285 @@ Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Proteção avançada WordPress: blacklists automáticas, bloqueio por país (MaxMind), anti força bruta, reCAPTCHA e proteção XML-RPC.
+Advanced WordPress protection with automatic blacklists, MaxMind country blocking, brute-force protection, reCAPTCHA, and XML-RPC security.
 
 == Description ==
 
-O **Dolutech Blacklist Protect** é um sistema avançado de proteção que oferece múltiplas camadas de segurança para sites WordPress, com tecnologias modernas e interface intuitiva.
+**Dolutech Blacklist Protect** is an advanced security system that provides multiple layers of protection for WordPress sites through a modern and intuitive interface.
 
-### Bloqueio por Geolocalização (NOVO!)
-- **Integração MaxMind GeoIP2**: Bloqueie países inteiros automaticamente
-- **Validação Automática**: Teste de credenciais ao salvar configurações
-- **Cache Inteligente**: Reduz chamadas à API (24h de cache por IP)
-- **Interface Intuitiva**: Lista de países comumente bloqueados para referência
-- **Códigos ISO**: Use códigos de 2 letras (CN, RU, BR, etc.)
+### Geolocation Blocking
+- **MaxMind GeoIP2 Integration**: Automatically block entire countries
+- **Automatic Validation**: Test credentials when saving settings
+- **Smart Caching**: Reduce API requests with 24-hour per-IP caching
+- **Intuitive Interface**: Reference list of commonly blocked countries
+- **ISO Codes**: Use two-letter country codes (CN, RU, BR, and more)
 
-### Sistema de Blacklists Avançado
-- **Blacklist Dolutech**: Atualizada automaticamente 2x ao dia
-- **Blacklists de Terceiros**: Adicione URLs externas de listas .txt
-- **Bloqueio Manual**: IPs específicos com gerenciamento completo
-- **Whitelist Inteligente**: IPs fixos e domínios DDNS sempre permitidos
+### Advanced Blacklist System
+- **Dolutech Blacklist**: Automatically updated twice daily
+- **Third-Party Blacklists**: Add external .txt list URLs
+- **Manual Blocking**: Manage specific IP addresses
+- **Smart Whitelist**: Always allow fixed IPs and DDNS domains
 
-### Proteção Contra Força Bruta
-- Bloqueio automático após X tentativas falhadas (configurável)
-- **Bloqueio Temporário**: Configure duração em minutos, não horas
-- **Bloqueio Permanente**: Para máxima segurança
-- **Proteção XML-RPC**: Bloqueio completo ou parcial configurável
+### Brute-Force Protection
+- Automatically block after a configurable number of failed attempts
+- **Temporary Blocking**: Configure the duration in minutes
+- **Permanent Blocking**: For maximum protection
+- **XML-RPC Protection**: Configurable complete or partial blocking
 
-### Bloqueio por Usuários Específicos
-- Configure usuários "armadilha" (admin, root, administrator)
-- Bloqueio imediato do IP ao tentar login com usuários protegidos
-- Validação automática: só bloqueia se o usuário NÃO existir
+### Specific User Blocking
+- Configure trap usernames such as admin, root, and administrator
+- Immediately block the IP when a protected username is used
+- Automatic validation: block only when the username does not exist
 
-### Sistema de Desbloqueio Inteligente
-- Solicitação via e-mail com token seguro (válido 24h)
-- **Chave Secreta**: Camada extra de segurança opcional
-- **Google reCAPTCHA v2**: Proteção contra bots nos formulários
-- Interface responsiva com toggle para visualizar chaves
+### Intelligent Unblocking
+- Request unblocking by email with a secure token
+- **Secret Key**: Optional additional security layer
+- **Google reCAPTCHA v2**: Bot protection for forms
+- Responsive interface with toggles for viewing keys
 
-### Monitoramento Completo
-- Dashboard com estatísticas detalhadas por fonte
-- Lista de IPs com bloqueio temporário ativo (tempo restante)
-- Tokens de desbloqueio pendentes
-- Blacklists de terceiros com status e contadores
+### Complete Monitoring
+- Dashboard with detailed statistics by source
+- Active temporary blocks with remaining time
+- Pending unblock tokens
+- Third-party blacklist status and counters
 
-### Recursos Avançados
-- **Interface Dinâmica**: JavaScript para mostrar/ocultar opções
-- **Validações Robustas**: Nonces, sanitização e escaping
-- **Logs Automáticos**: Registro de atividades e erros
-- **Cron Jobs**: Limpeza automática de dados antigos
+### Advanced Features
+- **Dynamic Interface**: JavaScript for conditional fields
+- **Robust Validation**: Nonces, sanitization, and escaping
+- **Automatic Logs**: Record security events
+- **Cron Jobs**: Automatically clean up old data
 
-Ideal para **desenvolvedores**, **administradores** e **agências** que buscam segurança máxima sem comprometer usabilidade.
+Ideal for **developers**, **administrators**, and **agencies** that need strong security without sacrificing usability.
 
 == Installation ==
 
-1. **Upload**: Envie a pasta `dolutech-blacklist-protect` para `/wp-content/plugins/`
-2. **Ativação**: Ative o plugin em **Plugins** → **Plugins Instalados**
-3. **Configuração**: Acesse **Configurações** → **Dolutech Blacklist Protect**
-4. **Requisitos**: PHP 8.2+ e WordPress 6.7+ (verificados automaticamente)
-5. **Recomendações**: 
-   - Configure sua whitelist ANTES de ativar bloqueios
-   - Teste o sistema de e-mail para desbloqueios
-   - Configure reCAPTCHA para máxima segurança
+1. **Upload**: Upload the `dolutech-blacklist-protect` folder to `/wp-content/plugins/`
+2. **Activate**: Activate the plugin under **Plugins** -> **Installed Plugins**
+3. **Configure**: Go to **Settings** -> **Dolutech Blacklist Protect**
+4. **Requirements**: PHP 8.2+ and WordPress 6.7+ are checked automatically
+5. **Recommendations**:
+   - Configure your whitelist BEFORE enabling blocking features
+   - Test the email system for unblock requests
+   - Configure reCAPTCHA for maximum protection
 
 == Frequently Asked Questions ==
 
-= Como funciona o bloqueio por geolocalização? =
-Ao ativar o MaxMind GeoIP2, você insere suas credenciais da API e seleciona os países a bloquear usando códigos ISO (2 letras). Quando alguém de um país bloqueado tenta acessar, o plugin consulta a API MaxMind, identifica o país do IP e bloqueia automaticamente. Os resultados ficam em cache por 24 horas para otimizar performance.
+= How does geolocation blocking work? =
 
-= Onde consigo credenciais da MaxMind? =
-Acesse https://www.maxmind.com/en/geolite2/signup e crie uma conta gratuita. Em "Manage License Keys", crie uma nova chave. Você receberá um Account ID e uma License Key. O plugin valida automaticamente ao salvar.
+When MaxMind GeoIP2 is enabled, enter your API credentials and select the countries to block using ISO codes. When someone from a blocked country accesses the site, the plugin queries the MaxMind API, identifies the IP country, and blocks it automatically. Results are cached for 24 hours to improve performance.
 
-= Como as blacklists são atualizadas? =
-As listas são atualizadas automaticamente 2x ao dia via cron do WordPress. Inclui a blacklist Dolutech oficial + todas as blacklists de terceiros configuradas.
+= Where can I get MaxMind credentials? =
 
-= E se meu IP estiver bloqueado? =
-Configure sua **whitelist** primeiro! Adicione IP fixo ou domínio DDNS em **Configurações** → **Whitelist**. IPs bloqueados manualmente podem solicitar desbloqueio.
+Visit https://www.maxmind.com/en/geolite2/signup and create a free account. Under "Manage License Keys", create a new key. You will receive an Account ID and a License Key. The plugin validates them automatically when they are saved.
 
-= Como funciona o sistema de desbloqueio? =
-1. IP bloqueado vê opção "Solicitar Desbloqueio"
-2. Sistema envia token seguro por e-mail aos admins
-3. Admin clica no link para desbloquear
-4. Se configurado: reCAPTCHA + chave secreta obrigatórios
+= How are blacklists updated? =
 
-= Posso usar reCAPTCHA nos formulários? =
-Sim! Configure suas chaves do Google reCAPTCHA v2 em **Configurações** → **reCAPTCHA**. Aparece automaticamente nos formulários de desbloqueio.
+Blacklists are updated automatically twice daily through WordPress cron. This includes the official Dolutech blacklist and all configured third-party lists.
 
-= Como proteger usuários específicos? =
-Use **Bloqueio por Usuários Específicos**: adicione usernames como "admin", "root". Qualquer tentativa de login bloqueia o IP imediatamente.
+= What if my IP is blocked? =
 
-= XML-RPC fica completamente desabilitado? =
-Você escolhe: **Bloqueio Completo** (desabilita tudo) ou **Proteção Parcial** (remove métodos perigosos, monitora tentativas).
+Configure your **whitelist** first. Add a fixed IP or DDNS domain under **Settings** -> **Whitelist**. IPs blocked manually can request an unblock review.
 
-= Blacklists de terceiros são confiáveis? =
-Você adiciona apenas URLs que confia. O plugin valida IPs antes de bloquear. Recomendamos fontes como SpamHaus, AbuseIPDB, etc.
+= How does the unblocking system work? =
 
-= O plugin afeta performance? =
-Mínima. Bloqueios são verificados apenas no início da requisição. Usa caching e limpeza automática de dados antigos.
+1. A blocked IP sees a "Request Unblock" option
+2. The system sends a secure token by email to administrators
+3. An administrator clicks the link to unblock the IP
+4. If configured, reCAPTCHA and the secret key are also required
 
-= Posso contribuir? =
-Sim! GitHub: [https://github.com/dolutech](https://github.com/dolutech) | Sugestões: suporte@dolutech.com
+= Can I use reCAPTCHA on the forms? =
+
+Yes. Configure your Google reCAPTCHA v2 keys under **Settings** -> **reCAPTCHA**. It is added automatically to unblock forms.
+
+= How can I protect specific usernames? =
+
+Use **Specific User Blocking** and add usernames such as "admin" and "root". Any login attempt with a protected username that does not exist blocks the IP immediately.
+
+= Is XML-RPC completely disabled? =
+
+You can choose **Complete Blocking**, which disables everything, or **Partial Protection**, which removes dangerous methods and monitors attempts.
+
+= Are third-party blacklists trustworthy? =
+
+You should add only URLs that you trust. The plugin validates IP addresses before blocking them. Sources such as Spamhaus and AbuseIPDB are common examples.
+
+= Does the plugin affect performance? =
+
+The impact is minimal. Blocks are checked at the beginning of the request. The plugin uses caching and automatically removes old data.
+
+= Can I contribute? =
+
+Yes. GitHub: [https://github.com/dolutech](https://github.com/dolutech) | Suggestions: support@dolutech.com
 
 == Screenshots ==
 
-1. Dashboard principal com estatísticas detalhadas de blacklists por fonte
-2. Configuração MaxMind GeoIP2 com validação automática de credenciais
-3. Interface de bloqueio por países com códigos ISO e países comuns
-4. Configurações de proteção de login com bloqueio temporário
-5. Interface de blacklists de terceiros com status e contadores
-6. Sistema de desbloqueio com reCAPTCHA e chave secreta
-7. Configuração de bloqueio por usuários específicos
-8. Proteção XML-RPC com opções completas e parciais
+1. Main dashboard with detailed blacklist statistics
+2. MaxMind GeoIP2 configuration with automatic credential validation
+3. Country blocking interface with ISO codes and common countries
+4. Login protection settings with temporary blocking
+5. Third-party blacklist management interface with status and counters
+6. Unblock system with reCAPTCHA
+7. Specific user blocking configuration
+8. Complete and partial XML-RPC protection settings
 
 == Changelog ==
 
 = 0.9.0 =
-* **Novo**: Registro de eventos de segurança com painel completo (filtros, paginação, limpeza)
-* **Novo**: Bloqueio por faixa CIDR (IPv4 e IPv6) e por user-agent
-* **Novo**: REST API para gestão de bloqueios, logs e atualização da blacklist (Application Passwords)
-* **Novo**: Notificações via Telegram e Webhook para eventos de bloqueio
-* **Melhoria**: Cron diário de manutenção com purga automática de logs antigos
+* **New**: Security event logging with a complete dashboard (filters, pagination, and cleanup)
+* **New**: CIDR-range and user-agent blocking (IPv4 and IPv6)
+* **New**: REST API for managing blocks, logs, and blacklist updates (Application Passwords)
+* **New**: Telegram and webhook notifications for blocking events
+* **Improvement**: Daily maintenance cron job with automatic cleanup of old logs
 
 = 0.8.0 =
-* **Compatibilidade**: Testado até WordPress 7.1
-* **Correção**: reCAPTCHA agora funciona nos formulários de desbloqueio (render inline)
-* **Correção**: Página de admin não baixa mais a blacklist do GitHub a cada visita
-* **Correção**: Mensagem de login genérica e traduzível (sem revelar o plugin)
-* **Segurança**: Denúncia automática agora respeita o toggle "Relato Automático"
-* **Segurança**: Rate-limit nas solicitações de desbloqueio (2/dia/IP) e chave secreta (5/15min/IP)
-* **Segurança**: Chave secreta armazenada com hash; segredos não são mais exibidos no HTML
-* **Segurança**: Suporte a IP real atrás de proxy/CDN (X-Forwarded-For configurável)
-* **Performance**: Blacklist armazenada como string sem autoload; stats persistidas; cache negativo MaxMind; cache DNS da whitelist
-* **Manutenção**: uninstall.php remove todos os dados; guards ABSPATH em todos os includes; i18n (Text Domain + .pot)
-* **Docs**: FAQ corrigido (bloqueio aplica a usuários inexistentes)
+* **Compatibility**: Tested up to WordPress 7.1
+* **Fix**: reCAPTCHA now works on unblock forms with inline rendering
+* **Fix**: The admin page no longer downloads the blacklist from GitHub on every visit
+* **Fix**: Generic and translatable login message without revealing the plugin
+* **Security**: Automatic reporting respects the "Automatic Reporting" toggle
+* **Security**: Rate limiting on unblock requests (2 per day per IP) and secret-key attempts (5 per 15 minutes per IP)
+* **Security**: Secret keys are stored as hashes and are no longer shown in HTML
+* **Security**: Support for real client IPs behind a proxy or CDN (configurable X-Forwarded-For)
+* **Performance**: Blacklists stored as a non-autoloaded string; persisted statistics; negative MaxMind cache; whitelist DNS cache
+* **Maintenance**: uninstall.php removes all data; ABSPATH guards in all includes; i18n (Text Domain and .pot)
+* **Docs**: FAQ corrected to clarify that blocking applies to nonexistent users
 
 = 0.7.0 =
-* **Novo**: Integração com MaxMind GeoIP2 para bloqueio por geolocalização
-* **Novo**: Validação automática de credenciais MaxMind ao salvar
-* **Novo**: Campo para configurar Account ID e License Key
-* **Novo**: Campo para bloquear países por código ISO (2 letras)
-* **Novo**: Cache de geolocalização por 24 horas para otimizar performance
-* **Novo**: Lista de países comumente bloqueados como referência
-* **Novo**: Página de bloqueio personalizada para bloqueios geográficos
-* **Novo**: Limpeza automática de cache de geolocalização expirado
-* **Melhoria**: Toggle seguro para visualizar License Key da MaxMind (textContent)
-* **Melhoria**: Interface condicional que aparece após validar credenciais
-* **Docs**: Instruções completas para obter credenciais MaxMind
-* **Segurança**: Validação de códigos de país com regex
-* **Segurança**: Sanitização e escaping em todos os campos MaxMind
+* **New**: MaxMind GeoIP2 integration for geolocation blocking
+* **New**: Automatic validation of MaxMind credentials when saving
+* **New**: Fields for the MaxMind Account ID and License Key
+* **New**: Country blocking by two-letter ISO code
+* **New**: 24-hour geolocation caching for better performance
+* **New**: Automatic cleanup of expired geolocation cache
+* **Improvement**: Custom blocking pages for geolocation blocks
+* **Improvement**: Toggle to safely show the MaxMind License Key using textContent
+* **Improvement**: Conditional interface shown after credentials are validated
+* **Docs**: Complete instructions for obtaining MaxMind credentials
+* **Security**: Country-code validation with a regular expression
+* **Security**: Sanitization and escaping for all MaxMind fields
 
 = 0.6.0 =
-* **Novo**: Botão toggle para visualizar/ocultar chave secreta
-* **Novo**: Bloqueio de IPs por usuários específicos (admin, root, etc)
-* **Novo**: Validação automática de existência de usuários na lista
-* **Melhoria**: Interface JavaScript dinâmica para mostrar/ocultar campos
-* **Melhoria**: Hook wp_authenticate para interceptar logins maliciosos
-* **Docs**: README.md completo com todas as funcionalidades
+* **New**: Toggle button to show or hide the secret key
+* **New**: Blocking of specific usernames (admin, root, and others)
+* **New**: Automatic validation of whether usernames exist
+* **Improvement**: Dynamic JavaScript interface for conditional fields
+* **Improvement**: Login interception through the wp_authenticate hook
+* **Docs**: Complete instructions for dynamic fields and specific user blocking
 
 = 0.5.0 =
-* **Novo**: Google reCAPTCHA v2 integrado aos formulários de desbloqueio
-* **Novo**: Configuração completa de reCAPTCHA (Site Key + Secret Key)
-* **Novo**: Validação server-side robusta do reCAPTCHA
-* **Melhoria**: Formulários responsivos com design aprimorado
-* **Melhoria**: Tratamento de erro elegante para reCAPTCHA
-* **Segurança**: Timeout e validação de IP nas requisições reCAPTCHA
+* **New**: Google reCAPTCHA v2 integration for unblock forms
+* **New**: Complete reCAPTCHA configuration (Site Key and Secret Key)
+* **New**: Robust server-side reCAPTCHA validation
+* **Improvement**: Responsive forms with an improved design
+* **Improvement**: Graceful error handling for reCAPTCHA
+* **Security**: Timeout and IP validation for reCAPTCHA requests
 
 = 0.4.0 =
-* **Novo**: Sistema de blacklists de terceiros (URLs externas)
-* **Novo**: Interface completa para gerenciar listas externas
-* **Novo**: Estatísticas detalhadas por fonte (Dolutech + terceiros)
-* **Novo**: Status visual das blacklists (Ativa, Erro, Pendente)
-* **Melhoria**: Atualização automática de múltiplas listas em paralelo
-* **Melhoria**: Dashboard reorganizado com contadores por categoria
+* **New**: Third-party blacklist system with external list URLs
+* **New**: Complete interface for managing external lists
+* **New**: Detailed statistics by source
+* **New**: Visual status for blacklists (Active, Error, and Pending)
+* **Improvement**: Parallel updates for multiple lists
+* **Improvement**: Reorganized dashboard
 
 = 0.3.0 =
-* **Novo**: Sistema de chave secreta para desbloqueio
-* **Novo**: Bloqueio temporário em MINUTOS (não mais horas)
-* **Novo**: Proteção XML-RPC configurável (completa ou parcial)
-* **Novo**: Interface para mostrar tempo restante de bloqueios
-* **Melhoria**: Páginas de bloqueio temporário personalizadas
-* **Melhoria**: JavaScript para campos condicionais
+* **New**: Temporary blocking in minutes, not hours
+* **New**: Secret key for unblocking
+* **New**: Configurable complete and partial XML-RPC protection
+* **New**: Interface showing the remaining temporary-block time
+* **Improvement**: Custom temporary-block pages
+* **Improvement**: JavaScript for conditional fields
 
 = 0.2.0 =
-* **Novo**: Sistema completo de solicitação de desbloqueio
-* **Novo**: Tokens seguros por e-mail (válidos 24h)
-* **Novo**: Configuração de tentativas máximas de login
-* **Novo**: E-mails automáticos para administradores
-* **Melhoria**: Interface de tokens pendentes no admin
-* **Melhoria**: Limpeza automática de tokens expirados
+* **New**: Complete unblock request system
+* **New**: Secure email tokens valid for 24 hours
+* **New**: Maximum login-attempt configuration
+* **New**: Automatic emails to administrators
+* **Improvement**: Admin interface for pending tokens
+* **Improvement**: Automatic cleanup of expired tokens
 
 = 0.1.0 =
-* **Novo**: Proteção avançada contra força bruta
-* **Novo**: Denúncia automática de IPs maliciosos
-* **Novo**: Contadores de tentativas com transients
-* **Melhoria**: Sistema de bloqueio mais eficiente
-* **Segurança**: Validação aprimorada de IPs
+* **New**: Advanced brute-force protection
+* **New**: Automatic reporting of malicious IP addresses
+* **New**: Login-attempt counters using transients
+* **Improvement**: More efficient blocking system
+* **Security**: Improved IP validation
 
 = 0.0.1 =
-* **Lançamento**: Versão inicial estável
-* Blacklist automática da Dolutech (atualizada 2x/dia)
-* Bloqueio e desbloqueio manual de IPs
-* Sistema de denúncia manual para abuse@dolutech.com
-* Whitelist com suporte a IPs fixos e domínios DDNS
-* Interface administrativa completa
-* Compatibilidade WordPress 6.7+ e PHP 8.2+
-
+* **Initial release**: Stable first version
+* Automatic Dolutech blacklist updated twice daily
+* Manual IP blocking and unblocking
+* Manual reporting system for abuse@dolutech.com
+* Whitelist with fixed-IP and DDNS-domain support
+* Complete administration interface
+* WordPress 6.7+ and PHP 8.2+ compatibility
 
 == External Services ==
 
-Este plugin conecta-se a serviços externos para funcionalidade completa:
+This plugin connects to external services to provide its full functionality.
 
-**Blacklist Dolutech (Obrigatório)**
+**Dolutech Blacklist (Required)**
 - URL: https://raw.githubusercontent.com/dolutech/blacklist-dolutech/refs/heads/main/Black-list-semanal-dolutech.txt
-- Descrição: Lista oficial de IPs maliciosos, atualizada automaticamente
-- Termos: https://dolutech.com/termos-de-uso/
-- Privacidade: https://dolutech.com/politica-de-privacidade/
+- Description: Official malicious-IP list, updated automatically
+- Terms: https://dolutech.com/termos-de-uso/
+- Privacy: https://dolutech.com/politica-de-privacidade/
 
-**Sistema de E-mails (Opcional)**
-- abuse@dolutech.com: Para denúncias automáticas de IPs
-- Admins do site: Para notificações de desbloqueio
-- Usa wp_mail() nativo do WordPress
+**Email System (Optional)**
+- abuse@dolutech.com: For automatic reports
+- Site administrators: For unblock notifications
+- Uses the native WordPress `wp_mail()` function
 
-**Google reCAPTCHA v2 (Opcional)**
+**Google reCAPTCHA v2 (Optional)**
 - API: https://www.google.com/recaptcha/api/siteverify
-- Descrição: Validação de formulários contra bots
-- Configuração: Requer Site Key + Secret Key
-- Termos: https://developers.google.com/recaptcha/docs/terms
+- Description: Form validation against bots
+- Configuration: Requires a Site Key and Secret Key
+- Terms: https://developers.google.com/recaptcha/docs/terms
 
-**MaxMind GeoIP2 (Opcional)**
+**MaxMind GeoIP2 (Optional)**
 - API: https://geolite.info/geoip/v2.1/country/
-- Descrição: Geolocalização de IPs para bloqueio por país
-- Configuração: Requer Account ID + License Key
-- Cadastro: https://www.maxmind.com/en/geolite2/signup
-- Termos: https://www.maxmind.com/en/geolite2/eula
-- Privacidade: Dados de IP consultados são cacheados localmente por 24h
+- Description: IP geolocation for country blocking
+- Configuration: Requires an Account ID and License Key
+- Registration: https://www.maxmind.com/en/geolite2/signup
+- Terms: https://www.maxmind.com/en/geolite2/eula
+- Privacy: IP data queried by the plugin is cached locally for 24 hours
 
-**Blacklists de Terceiros (Opcional)**
-- URLs definidas pelo usuário
-- Validação automática de formato .txt
-- Exemplos: SpamHaus, AbuseIPDB, etc.
+**Third-Party Blacklists (Optional)**
+- URLs are defined by the site administrator
+- Automatic validation of .txt list format
+- Examples: Spamhaus and AbuseIPDB
 
 == Upgrade Notice ==
 
 = 0.9.0 =
-Novas funcionalidades: painel de logs de eventos, bloqueio CIDR/user-agent, REST API e notificações Telegram/Webhook.
+New features: security event logs, CIDR and user-agent blocking, REST API, and Telegram/webhook notifications.
 
 = 0.8.0 =
-Correções de segurança e performance: reCAPTCHA corrigido, denúncias respeitam o toggle, rate-limits nos formulários, chave secreta hasheada, admin mais rápido e compatível com WordPress 7.1.
+Security and performance improvements: fixed reCAPTCHA, automatic-reporting toggle, unblock-form rate limits, hashed secret keys, a faster admin page, and WordPress 7.1 compatibility.
 
 = 0.7.0 =
-Bloqueio por geolocalização! Integração completa com MaxMind GeoIP2. Bloqueie países inteiros usando códigos ISO de 2 letras. Cache inteligente e validação automática.
+Geolocation blocking with complete MaxMind GeoIP2 integration. Block entire countries using two-letter ISO codes with smart caching and automatic credential validation.
 
 = 0.6.0 =
-Novos recursos: botão para visualizar chave secreta + bloqueio por usuários específicos. Interface aprimorada com JavaScript dinâmico.
+New features: secret-key visibility toggle and specific-user blocking with a dynamic configuration interface.
 
 = 0.5.0 =
-Google reCAPTCHA v2 integrado! Adicione proteção contra bots nos formulários de desbloqueio. Configure suas chaves e ative.
+Google reCAPTCHA v2 integration. Add bot protection to unblock forms by configuring your keys.
 
 = 0.4.0 =
-Blacklists de terceiros! Adicione URLs externas de listas .txt para máxima proteção. Dashboard com estatísticas detalhadas.
+Third-party blacklists. Add external .txt list URLs with dashboard statistics.
 
 = 0.3.0 =
-Bloqueio em MINUTOS + chave secreta + proteção XML-RPC configurável. Sistema mais flexível e seguro.
+Temporary blocking in minutes, a secret key, and configurable XML-RPC protection.
 
 = 0.2.0 =
-Sistema de desbloqueio com tokens seguros por e-mail. IPs bloqueados podem solicitar revisão aos administradores.
+Secure email tokens for unblock requests. Blocked IPs can request an administrator review.
 
 = 0.1.0 =
-Proteção contra força bruta com denúncia automática. Bloqueio inteligente após X tentativas configuráveis.
+Brute-force protection with automatic reporting and configurable thresholds.
 
 = 0.0.1 =
-Primeira versão estável. Blacklist automática Dolutech + bloqueio manual + whitelist + denúncias.
-
+First stable release with automatic blacklists, manual blocking, whitelists, and reporting.
 
 == License ==
 
-Este plugin está licenciado sob a GNU General Public License v2.0 ou posterior. Para mais informações, visite https://www.gnu.org/licenses/gpl-2.0.html.
+This plugin is licensed under the GNU General Public License v2.0 or later. For more information, visit https://www.gnu.org/licenses/gpl-2.0.html.

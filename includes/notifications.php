@@ -63,6 +63,41 @@ function blwp_send_notifications($event_type, $ip, $reason, $force = false) {
 }
 
 /**
+ * Reports an outbound notification failure without interrupting the request.
+ *
+ * @since 0.9.0
+ *
+ * @param string  $channel Notification channel.
+ * @param WP_Error $error   Request error.
+ */
+function blwp_report_notification_error($channel, $error) {
+    $has_listener = false !== has_action('blwp_notification_error');
+    $callback_exception = null;
+
+    try {
+        do_action('blwp_notification_error', $channel, $error);
+    } catch (Throwable $exception) {
+        $callback_exception = $exception;
+    }
+
+    if (
+        (!$has_listener || $callback_exception instanceof Throwable)
+        && defined('WP_DEBUG')
+        && WP_DEBUG
+        && defined('WP_DEBUG_LOG')
+        && WP_DEBUG_LOG
+    ) {
+        $message = $error->get_error_message();
+        if ($callback_exception instanceof Throwable) {
+            $message .= ' Hook error: ' . $callback_exception->getMessage();
+        }
+
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Debug-only fallback when no listener handles the notification error.
+        error_log(sprintf('BLWP %s notification: %s', $channel, $message));
+    }
+}
+
+/**
  * Envia mensagem para o Telegram.
  *
  * @param string $text Texto da mensagem.
@@ -82,7 +117,7 @@ function blwp_send_telegram($text) {
         'timeout' => 5,
     ]);
     if (is_wp_error($response)) {
-        error_log('BLWP Telegram: ' . $response->get_error_message());
+        blwp_report_notification_error('telegram', $response);
     }
 }
 
@@ -102,7 +137,7 @@ function blwp_send_webhook($payload) {
         'timeout' => 5,
     ]);
     if (is_wp_error($response)) {
-        error_log('BLWP Webhook: ' . $response->get_error_message());
+        blwp_report_notification_error('webhook', $response);
     }
 }
 
