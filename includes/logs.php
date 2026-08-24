@@ -72,6 +72,7 @@ function blwp_log_event($ip, $event_type, $reason, $source) {
         'user_agent' => substr($user_agent, 0, 255),
     ];
 
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- The plugin-owned log table has no equivalent in the WordPress Options API.
     $wpdb->insert($table, $data);
 
     // Notificações (Telegram/Webhook) — nunca devem derrubar o request.
@@ -107,11 +108,14 @@ function blwp_get_logs($args = []) {
     $page = isset($args['page']) ? max(1, (int) $args['page']) : 1;
     $offset = ($page - 1) * $per_page;
 
-    $sql = 'SELECT * FROM %i WHERE ' . implode(' AND ', $where) . ' ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d';
-    $params = array_merge([$table], $params, [$per_page, $offset]);
-
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
-    return $wpdb->get_results($wpdb->prepare($sql, $params), ARRAY_A);
+    return $wpdb->get_results(
+        $wpdb->prepare(
+            'SELECT * FROM %i WHERE ' . implode(' AND ', $where) . ' ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d',
+            array_merge([$table], $params, [$per_page, $offset])
+        ),
+        ARRAY_A
+    );
 }
 
 /**
@@ -139,11 +143,13 @@ function blwp_count_logs($args = []) {
         $params[] = sanitize_text_field($args['source']);
     }
 
-    $sql = 'SELECT COUNT(*) FROM %i WHERE ' . implode(' AND ', $where);
-    $params = array_merge([$table], $params);
-
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
-    return (int) $wpdb->get_var($wpdb->prepare($sql, $params));
+    return (int) $wpdb->get_var(
+        $wpdb->prepare(
+            'SELECT COUNT(*) FROM %i WHERE ' . implode(' AND ', $where),
+            array_merge([$table], $params)
+        )
+    );
 }
 
 /**

@@ -1360,7 +1360,7 @@ function blwp_enqueue_recaptcha_script() {
         'blwp-recaptcha',
         'https://www.google.com/recaptcha/api.js',
         [],
-        false,
+        BLWP_VERSION,
         [
             'in_footer' => true,
             'strategy'  => 'defer',
