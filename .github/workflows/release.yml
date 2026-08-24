@@ -37,8 +37,8 @@ jobs:
             "$package_root/"
 
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            plugin_version="$(sed -n 's/^ \\* Version: *//p' dolutech-blacklist-protect.php | head -n 1)"
-            tag_version="\${GITHUB_REF_NAME#v}"
+            plugin_version="$(sed -n 's/^ \* Version: *//p' dolutech-blacklist-protect.php | head -n 1)"
+            tag_version="${GITHUB_REF_NAME#v}"
 
             if [[ "$plugin_version" != "$tag_version" ]]; then
               echo "Tag $GITHUB_REF_NAME does not match plugin version $plugin_version." >&2
@@ -58,13 +58,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dolutech-blacklist-protect
-          path: \${{ runner.temp }}/dolutech-blacklist-protect.zip
+          path: ${{ runner.temp }}/dolutech-blacklist-protect.zip
           if-no-files-found: error
 
       - name: Publish release asset
         if: startsWith(github.ref, 'refs/tags/')
         env:
-          GH_TOKEN: \${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
