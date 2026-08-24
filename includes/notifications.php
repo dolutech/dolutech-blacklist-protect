@@ -82,7 +82,15 @@ function blwp_send_telegram($text) {
         'timeout' => 5,
     ]);
     if (is_wp_error($response)) {
-        error_log('BLWP Telegram: ' . $response->get_error_message());
+        /**
+         * Fires when an outbound notification request fails.
+         *
+         * @since 0.9.0
+         *
+         * @param string  $channel Notification channel.
+         * @param WP_Error $error   Request error.
+         */
+        do_action('blwp_notification_error', 'telegram', $response);
     }
 }
 
@@ -102,7 +110,7 @@ function blwp_send_webhook($payload) {
         'timeout' => 5,
     ]);
     if (is_wp_error($response)) {
-        error_log('BLWP Webhook: ' . $response->get_error_message());
+        do_action('blwp_notification_error', 'webhook', $response);
     }
 }
 
