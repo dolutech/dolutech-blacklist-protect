@@ -60,7 +60,7 @@ Ideal for **developers**, **administrators**, and **agencies** that need strong 
 
 == Installation ==
 
-1. **Upload**: Upload the \`dolutech-blacklist-protect\` folder to \`/wp-content/plugins/\`
+1. **Upload**: Upload the `dolutech-blacklist-protect` folder to `/wp-content/plugins/`
 2. **Activate**: Activate the plugin under **Plugins** -> **Installed Plugins**
 3. **Configure**: Go to **Settings** -> **Dolutech Blacklist Protect**
 4. **Requirements**: PHP 8.2+ and WordPress 6.7+ are checked automatically
@@ -234,7 +234,7 @@ This plugin connects to external services to provide its full functionality.
 **Email System (Optional)**
 - abuse@dolutech.com: For automatic reports
 - Site administrators: For unblock notifications
-- Uses the native WordPress \`wp_mail()\` function
+- Uses the native WordPress `wp_mail()` function
 
 **Google reCAPTCHA v2 (Optional)**
 - API: https://www.google.com/recaptcha/api/siteverify
