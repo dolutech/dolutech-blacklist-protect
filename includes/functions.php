@@ -1382,6 +1382,11 @@ function blwp_render_recaptcha() {
 
     blwp_enqueue_recaptcha_script();
 
+    // Standalone block pages do not run wp_head() or wp_footer().
+    if (!did_action('wp_head') && !did_action('wp_footer')) {
+        wp_print_scripts('blwp-recaptcha');
+    }
+
     $site_key = get_option('blwp_recaptcha_site_key', '');
 
     return sprintf(
