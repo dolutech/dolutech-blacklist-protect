@@ -61,7 +61,7 @@ Ideal for **developers**, **administrators**, and **agencies** that need strong 
 == Installation ==
 
 1. **Download**: Download the `dolutech-blacklist-protect.zip` release asset for the version you want. Do not use GitHub's **Code** -> **Download ZIP** source archive for installation or updates.
-2. **Upload**: Upload the release ZIP under **Plugins** -> **Add New** -> **Upload Plugin**
+2. **Upload**: Upload the release ZIP under **Plugins** -> **Add New** -> **Upload Plugin**. If WordPress says the plugin is already installed, choose **Replace current with uploaded**.
 3. **Activate**: Activate the plugin under **Plugins** -> **Installed Plugins**
 4. **Configure**: Go to **Settings** -> **Dolutech Blacklist Protect**
 5. **Requirements**: PHP 8.2+ and WordPress 6.7+ are checked automatically
