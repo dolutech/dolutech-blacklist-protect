@@ -4,7 +4,7 @@ Tags: security, blacklist, ip-block, geolocation, brute-force
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,14 +60,21 @@ Ideal for **developers**, **administrators**, and **agencies** that need strong 
 
 == Installation ==
 
-1. **Upload**: Upload the `dolutech-blacklist-protect` folder to `/wp-content/plugins/`
-2. **Activate**: Activate the plugin under **Plugins** -> **Installed Plugins**
-3. **Configure**: Go to **Settings** -> **Dolutech Blacklist Protect**
-4. **Requirements**: PHP 8.2+ and WordPress 6.7+ are checked automatically
-5. **Recommendations**:
+1. **Download**: Download the `dolutech-blacklist-protect.zip` release asset for the version you want. Do not use GitHub's **Code** -> **Download ZIP** source archive for installation or updates.
+2. **Upload**: Upload the release ZIP under **Plugins** -> **Add New** -> **Upload Plugin**
+3. **Activate**: Activate the plugin under **Plugins** -> **Installed Plugins**
+4. **Configure**: Go to **Settings** -> **Dolutech Blacklist Protect**
+5. **Requirements**: PHP 8.2+ and WordPress 6.7+ are checked automatically
+6. **Recommendations**:
    - Configure your whitelist BEFORE enabling blocking features
    - Test the email system for unblock requests
    - Configure reCAPTCHA for maximum protection
+
+== Updating ==
+
+Use the release ZIP when updating an existing installation. The release package always has the canonical `dolutech-blacklist-protect/` directory and `dolutech-blacklist-protect.php` entry point, so WordPress can match it to the existing plugin.
+
+Do not upload a renamed or branch source archive such as `dolutech-blacklist-protect-main.zip`, `dolutech-blacklist-protect-1.zip`, or a folder with a numeric suffix. Those archives make WordPress treat the files as a separate plugin.
 
 == Frequently Asked Questions ==
 
@@ -130,6 +137,10 @@ Yes. GitHub: [https://github.com/dolutech](https://github.com/dolutech) | Sugges
 8. Complete and partial XML-RPC protection settings
 
 == Changelog ==
+
+= 0.9.1 =
+* **Fix**: Release packages keep the canonical `dolutech-blacklist-protect` directory so WordPress can update the existing plugin instead of creating a duplicate.
+* **Maintenance**: Version metadata is aligned so WordPress detects the update.
 
 = 0.9.0 =
 * **New**: Security event logging with a complete dashboard (filters, pagination, and cleanup)
@@ -256,6 +267,9 @@ This plugin connects to external services to provide its full functionality.
 - Examples: Spamhaus and AbuseIPDB
 
 == Upgrade Notice ==
+
+= 0.9.1 =
+Release packages now use the canonical plugin directory and version metadata so updates replace the existing installation.
 
 = 0.9.0 =
 New features: security event logs, CIDR and user-agent blocking, REST API, and Telegram/webhook notifications.
