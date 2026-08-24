@@ -85,6 +85,15 @@ $blwp_log_dir = trailingslashit($blwp_upload_dir['basedir']) . 'dolutech-blackli
 require_once ABSPATH . 'wp-admin/includes/file.php';
 global $wp_filesystem;
 
-if (WP_Filesystem() && $wp_filesystem->exists($blwp_log_dir)) {
-    $wp_filesystem->delete($blwp_log_dir, true);
+if (isset($wp_filesystem) && $wp_filesystem->exists($blwp_log_dir)) {
+    if (!$wp_filesystem->delete($blwp_log_dir, true)) {
+        /**
+         * Fires when plugin-owned files cannot be deleted during uninstall.
+         *
+         * @since 0.9.0
+         *
+         * @param string $path Directory that could not be deleted.
+         */
+        do_action('blwp_uninstall_filesystem_error', $blwp_log_dir);
+    }
 }
