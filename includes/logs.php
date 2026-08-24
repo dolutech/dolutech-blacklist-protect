@@ -88,66 +88,58 @@ function blwp_log_event($ip, $event_type, $reason, $source) {
 function blwp_get_logs($args = []) {
     global $wpdb;
     $table = $wpdb->prefix . 'blwp_logs';
-    $where = ['1=1'];
-    $params = [];
 
-    if (!empty($args['ip'])) {
-        $where[] = 'ip = %s';
-        $params[] = sanitize_text_field($args['ip']);
-    }
-    if (!empty($args['event_type'])) {
-        $where[] = 'event_type = %s';
-        $params[] = sanitize_text_field($args['event_type']);
-    }
-    if (!empty($args['source'])) {
-        $where[] = 'source = %s';
-        $params[] = sanitize_text_field($args['source']);
-    }
+    $filter_ip = !empty($args['ip']) ? sanitize_text_field($args['ip']) : '';
+    $filter_event_type = !empty($args['event_type']) ? sanitize_text_field($args['event_type']) : '';
+    $filter_source = !empty($args['source']) ? sanitize_text_field($args['source']) : '';
 
     $per_page = isset($args['per_page']) ? min((int) $args['per_page'], 100) : 20;
     $page = isset($args['page']) ? max(1, (int) $args['page']) : 1;
     $offset = ($page - 1) * $per_page;
 
-    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom log table query; identifier and values are prepared before execution.
     return $wpdb->get_results(
         $wpdb->prepare(
-            'SELECT * FROM %i WHERE ' . implode(' AND ', $where) . ' ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d',
-            array_merge([$table], $params, [$per_page, $offset])
+            'SELECT * FROM %i WHERE (%s = %s OR ip = %s) AND (%s = %s OR event_type = %s) AND (%s = %s OR source = %s) ORDER BY timestamp DESC, id DESC LIMIT %d OFFSET %d',
+            $table,
+            $filter_ip,
+            '',
+            $filter_ip,
+            $filter_event_type,
+            '',
+            $filter_event_type,
+            $filter_source,
+            '',
+            $filter_source,
+            $per_page,
+            $offset
         ),
         ARRAY_A
     );
 }
 
-/**
- * Conta logs com os mesmos filtros de blwp_get_logs.
- *
- * @param array $args Filtros: ip, event_type, source.
- * @return int
- */
 function blwp_count_logs($args = []) {
     global $wpdb;
     $table = $wpdb->prefix . 'blwp_logs';
-    $where = ['1=1'];
-    $params = [];
 
-    if (!empty($args['ip'])) {
-        $where[] = 'ip = %s';
-        $params[] = sanitize_text_field($args['ip']);
-    }
-    if (!empty($args['event_type'])) {
-        $where[] = 'event_type = %s';
-        $params[] = sanitize_text_field($args['event_type']);
-    }
-    if (!empty($args['source'])) {
-        $where[] = 'source = %s';
-        $params[] = sanitize_text_field($args['source']);
-    }
+    $filter_ip = !empty($args['ip']) ? sanitize_text_field($args['ip']) : '';
+    $filter_event_type = !empty($args['event_type']) ? sanitize_text_field($args['event_type']) : '';
+    $filter_source = !empty($args['source']) ? sanitize_text_field($args['source']) : '';
 
-    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom log table query; identifier and values are prepared before execution.
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom log table query; identifier and values are prepared before execution.
     return (int) $wpdb->get_var(
         $wpdb->prepare(
-            'SELECT COUNT(*) FROM %i WHERE ' . implode(' AND ', $where),
-            array_merge([$table], $params)
+            'SELECT COUNT(*) FROM %i WHERE (%s = %s OR ip = %s) AND (%s = %s OR event_type = %s) AND (%s = %s OR source = %s)',
+            $table,
+            $filter_ip,
+            '',
+            $filter_ip,
+            $filter_event_type,
+            '',
+            $filter_event_type,
+            $filter_source,
+            '',
+            $filter_source
         )
     );
 }
