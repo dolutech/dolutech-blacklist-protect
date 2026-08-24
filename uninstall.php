@@ -1,6 +1,6 @@
 <?php
 /**
- * Limpeza completa dos dados do Dolutech Blacklist Protect ao deletar o plugin.
+ * Remove all Dolutech Blacklist Protect data when the plugin is deleted.
  *
  * @package Dolutech_Blacklist_Protect
  */
@@ -9,7 +9,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
-$options = [
+$blwp_options = [
     'blwp_blacklist_enabled',
     'blwp_blacklisted_ips',
     'blwp_last_update',
@@ -52,33 +52,39 @@ $options = [
     'blwp_version',
 ];
 
-foreach ($options as $option) {
-    delete_option($option);
+foreach ($blwp_options as $blwp_option) {
+    delete_option($blwp_option);
 }
 
-// Remove transients restantes (tentativas de login, cache MaxMind, DNS, rate-limits).
+// Remove remaining transients (login attempts, MaxMind cache, DNS, and rate limits).
 global $wpdb;
+$blwp_options_table = $wpdb->options;
+/* phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- WordPress has no bulk API for deleting plugin transients during uninstall. */
 $wpdb->query(
     $wpdb->prepare(
-        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+        'DELETE FROM %i WHERE option_name LIKE %s OR option_name LIKE %s',
+        $blwp_options_table,
         $wpdb->esc_like('_transient_blwp_') . '%',
         $wpdb->esc_like('_transient_timeout_blwp_') . '%'
     )
 );
 
-// Remove cron e arquivos de log.
+// Remove scheduled events.
 wp_clear_scheduled_hook('blwp_update_blacklist_hook');
 wp_clear_scheduled_hook('blwp_daily_maintenance_hook');
 
-// Remove tabela de logs.
-global $wpdb;
-$logs_table = $wpdb->prefix . 'blwp_logs';
-// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $logs_table usa $wpdb->prefix (nunca input do usuário).
-$wpdb->query("DROP TABLE IF EXISTS {$logs_table}");
+// Remove the custom log table.
+$blwp_logs_table = $wpdb->prefix . 'blwp_logs';
+/* phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- Dropping the plugin-owned log table is part of the uninstall contract. */
+$wpdb->query($wpdb->prepare('DROP TABLE IF EXISTS %i', $blwp_logs_table));
 
-$upload_dir = wp_upload_dir();
-$log_dir = $upload_dir['basedir'] . '/dolutech-blacklist-protect';
-if (is_dir($log_dir)) {
-    array_map('unlink', glob($log_dir . '/*'));
-    rmdir($log_dir);
+// Remove log files through the WordPress Filesystem API.
+$blwp_upload_dir = wp_upload_dir();
+$blwp_log_dir = trailingslashit($blwp_upload_dir['basedir']) . 'dolutech-blacklist-protect';
+
+require_once ABSPATH . 'wp-admin/includes/file.php';
+global $wp_filesystem;
+
+if (WP_Filesystem() && $wp_filesystem->exists($blwp_log_dir)) {
+    $wp_filesystem->delete($blwp_log_dir, true);
 }
