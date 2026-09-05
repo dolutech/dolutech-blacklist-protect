@@ -47,7 +47,9 @@ function blwp_has_trusted_proxy() {
 }
 
 function blwp_get_blacklist_url() {
+    // phpcs:disable PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Remote IP text list is a documented plugin service (readme.txt External Services), not an offloaded JS/CSS/image asset.
     return 'https://raw.githubusercontent.com/dolutech/blacklist-dolutech/refs/heads/main/Black-list-semanal-dolutech.txt';
+    // phpcs:enable PluginCheck.CodeAnalysis.Offloading.OffloadedContent
 }
 
 function blwp_fetch_blacklist() {
